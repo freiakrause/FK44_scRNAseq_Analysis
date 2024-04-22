@@ -15,6 +15,7 @@
 #renv::install("ggplot2", "dplyr" ,"RColorBrewer") # package "SingleR" required by tutorial but not found when trying isntallation
 #renv::install("igraph") # für das scheiß igraph (benötigt für seurat) nach tausend jahren troublehsooting gefunden: ich brauche: sudo apt install build-essential gfortran UND sudo apt install build-essential gfortran, dann gehts
 #renv::install("Seurat")
+#renv::install("SoupX")
 #if (!require("BiocManager", quietly = TRUE))
 #  renv::install("BiocManager")
 #renv::install("gprofiler2")
@@ -38,6 +39,7 @@ library(SingleCellExperiment)
 library(scrubletR)
 library(gprofiler2)
 library(decontX)
+library(SoupX)
 library(celda)
 library(scater)
 library(stringr)
@@ -49,7 +51,7 @@ set.seed(42)
 #deconX= ambient RNA is floating around and got incorporated into GEMs and now cells which should not expres certain RNA seem to express it. 
 #e.g all cell types show Saa upregulation or whatever. but this is from dying heps that spread their RNA everywhere
 #So deconX kinda filters 
-############################
+############################ Load Data and decontaminate with DecontX ########################
 NPC_87.data <- Read10X(data.dir = "./00_raw_data/iAL87") #initializes Seurat object with the non normalized data, in the data dir, mtx file, barcodes.tsv files and genes.tsv files have to be
 NPC_87 <- CreateSeuratObject(count = NPC_87.data, project = "FK44_NPC_87", min.cells = 3, min.features = 200)
 NPC_87.raw <- Read10X(data.dir = "./00_raw_data/RAW_Feature_bc_matrix_87/raw_feature_bc_matrix") #initializes Seurat object with the non normalized data, in the data dir, mtx file, barcodes.tsv files and genes.tsv files have to be
@@ -82,6 +84,16 @@ counts <- GetAssayData(object = NPC_92, layer = "counts")
 sce_92 <- SingleCellExperiment(list(counts = counts))
 sce_92 <- decontX(sce_92)
 NPC_92[["decontXcounts"]] <- CreateAssayObject(counts = decontXcounts(sce_92))
+
+###########################Load Data and Decontaminate with SoupX ##################
+tod = Seurat::Read10X('./00_raw_data/RAW_Feature_bc_matrix_87/raw_feature_bc_matrix/')
+toc = Seurat::Read10X('./00_raw_data/iAL87/')
+sc = SoupChannel(tod,toc)
+#Tomorow try to read data from sc = load10X(dataDirs) but have to put raw bc matrix and not raw into these dirs. 
+sc = setClusters(sc,cluster_labels)
+sc = autoEstCont(sc)
+out = adjustCounts(sc)
+
 
 ########################## Kategorien Stimlulation und Sex hinzufügen, evtl noch age? ####################
 NPC_87$stim <- "TAM"
