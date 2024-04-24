@@ -48,8 +48,8 @@ set.seed(42)
 #so that we know, if we remove them by regression during SCTransform,we will not remove biological signal,
 #but only some unwanted variation.
 #NPC_QC<-readRDS("./01_tidy_data/QC_noQC_NPC.combined")
-#NPC_QC<-readRDS("./01_tidy_data/QC_QC5_NPC_QC5.combined")
-NPC_QC<-readRDS("./01_tidy_data/QC_QC6_NPC_QC6.combined")
+NPC_QC<-readRDS("./01_tidy_data/QC_QC5_NPC_QC5.combined")
+#NPC_QC<-readRDS("./01_tidy_data/QC_QC6_NPC_QC6.combined")
 
 ########################## Check if Regression of MT% and CellCycle Score is appropriate ##################################
 all.genes <- rownames(NPC_QC)
@@ -57,8 +57,8 @@ NPC_QC <- ScaleData(NPC_QC, features = all.genes)
 #PCA 
 NPC_QC <- RunPCA(NPC_QC, features = VariableFeatures(object = NPC_QC))
 png("./03_plots/01_QC/QC_2_QC6_PCADIMENSIONS_PCA1.png")
-dev.off()
 VizDimLoadings(NPC_QC, dims = 1:9, reduction = "pca") &  theme(axis.text=element_text(size=5), axis.title=element_text(size=8,face="bold"))
+dev.off()
 png("./03_plots/01_QC/QC_2_QC6_PCADIMENSIONS_HEAT.png")
 DimHeatmap(NPC_QC, dims = 1:6, nfeatures = 20, cells = 500, balanced = T)
 dev.off()
@@ -121,9 +121,9 @@ rm(NPC_QC_R1, NPC_QC_R10, NPC_QC_R5, NPC_QC_R8)
 # SCTransfrom might be beneficial bc it gices better signal to noise ratio. regression is performed with Mt5 and cell cylce Scores bc they introduce unwanted variation
 # Should I also regress for Sex and Stimulation? Sex variation is also unwanted at the moment
 ## regression mit vst.flavors= "v2" klappt nicht, wenn mit sec oder stim anwenden Fehler in `contrasts<-`(`*tmp*`, value = contr.funs[1 + isOF[nn]]) : Kontraste können nur auf Faktoren mit 2 oder mehr Stufen angewendet werden 
-
-NPC_ALL_TRANSFORM <- SCTransform(NPC_QC, vst.flavor= "v2", method = "glmGamPoi", vars.to.regress = c("percent.mt","S.Score","G2M.Score"), verbose = F)
-rm(NPC_QC)
+tail(NPC_QC$sample)
+sapply(lapply(NPC_QC@meta.data, unique), length)
+NPC_ALL_TRANSFORM <- SCTransform(NPC_QC,  vst.flavor= "v2",method = "glmGamPoi", vars.to.regress = c("percent.mt","S.Score","G2M.Score"), verbose = F) 
 NPC_ALL_TRANSFORM <- RunPCA(NPC_ALL_TRANSFORM, verbose = F)
 NPC_ALL_TRANSFORM <- RunUMAP(NPC_ALL_TRANSFORM, dims = 1:30, verbose = F)
 NPC_ALL_TRANSFORM <- FindNeighbors(NPC_ALL_TRANSFORM, dims = 1:30, verbose = F)
@@ -162,10 +162,24 @@ sce <- as.SingleCellExperiment(DietSeurat(NPC_ALL_TRANSFORM))
 mouseRNA.ref <- celldex::MouseRNAseqData()
 mouseRNA.main <- SingleR(test = sce,assay.type.test = 1,ref = mouseRNA.ref,labels = mouseRNA.ref$label.main)
 mouseRNA.fine <- SingleR(test = sce,assay.type.test = 1,ref = mouseRNA.ref,labels = mouseRNA.ref$label.fine)
+
+
 table(mouseRNA.main$pruned.labels)
 table(mouseRNA.fine$pruned.labels)
 NPC_ALL_TRANSFORM@meta.data$mouseRNA.main <- mouseRNA.main$pruned.labels
 NPC_ALL_TRANSFORM@meta.data$mouseRNA.fine <- mouseRNA.fine$pruned.labels
+
+
+#### Try to Use Scott "Spatial Protegenomics Macro niches as Ref data set for Annotations-------
+expression_matrix_Scott <- ReadMtx(  feature.column = 1, "./99_other/rawData_mouseStSt/countTable_mouseStSt/matrix.mtx.gz", features = "./99_other/rawData_mouseStSt/countTable_mouseStSt/features.tsv.gz",
+                                     cells = "./99_other/rawData_mouseStSt/countTable_mouseStSt/barcodes.tsv.gz")
+Matrix::readMM("./99_other/rawData_mouseStSt/countTable_mouseStSt/matrix.mtx.gz")
+
+Scott.main <- SingleR(test = sce,assay.type.test = 1,ref = expression_matrix_Scott,labels = mouseRNA.ref$label.main)
+
+
+
+
 rm(mouseRNA.fine, mouseRNA.main, mouseRNA.ref, sce)
 #"MouseRNAseqData set fits better than MonacoImmuneData and ImmGenData set # So deleted code for these datasets.
 
@@ -181,17 +195,17 @@ DimPlot(NPC_ALL_TRANSFORM, label = F, repel = T, group.by = "sex") + ggtitle("Se
 #Vizualise Cluster with Annotation of Stimulus ----
 DimPlot(NPC_ALL_TRANSFORM, label = F, repel = T, group.by = "stim") + ggtitle("Stimulation")
 #Vizualise Cluster with Annotation of Animal ----
-DimPlot(NPC_ALL_TRANSFORM, label = F, repel = T, group.by = "orig.ident") + ggtitle("Animal")
+DimPlot(NPC_ALL_TRANSFORM, label = F, repel = T, group.by = "sample") + ggtitle("Animal")
 
 ################### Save the SCT Transformed Seurat Object with Annotations############
 #saveRDS(NPC_ALL_TRANSFORM, file = "./01_tidy_data/NPC_ALL_TRANSFORM.rds")
 #saveRDS(NPC_ALL_TRANSFORM, file = "./01_tidy_data/NPC_ALL_TRANSFORM_QC5.rds")
-saveRDS(NPC_ALL_TRANSFORM, file = "./01_tidy_data/NPC_ALL_TRANSFORM_QC6.rds")
+#saveRDS(NPC_ALL_TRANSFORM, file = "./01_tidy_data/NPC_ALL_TRANSFORM_QC6.rds")
 
 ################## Load SC Transformed Seurat Object with Annotations ###############
 #NPC_ALL_TRANSFORM <- readRDS( "./01_tidy_data/NPC_ALL_TRANSFORM.rds")
 #NPC_ALL_TRANSFORM <- readRDS( "./01_tidy_data/NPC_ALL_TRANSFORM_QC5.rds")
-NPC_ALL_TRANSFORM <- readRDS( "./01_tidy_data/NPC_ALL_TRANSFORM_QC6.rds")
+#NPC_ALL_TRANSFORM <- readRDS( "./01_tidy_data/NPC_ALL_TRANSFORM_QC6.rds")
 
 
 ########################## Identify differentially expressed Genes in Clusters across Conditions ############################
