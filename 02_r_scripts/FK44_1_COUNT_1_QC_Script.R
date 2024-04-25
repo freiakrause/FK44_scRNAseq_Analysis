@@ -1,4 +1,4 @@
-#This is the script to analyse FK44.1 scRNAseq COUNT data provided by BSF
+#This is the script to perform QC on FK44.1 scRNAseq COUNT data provided by BSF
 
 ############################ Install Packages #################################
 #install.packages("renv")
@@ -27,8 +27,10 @@
 #BiocManager::install('decontX')
 #remotes::install_github("Moonerss/scrubletR")
 #remotes::install_github('immunogenomics/presto')
-
+#remotes::install_github("cysouw/qlcMatrix")
+#remotes::install_github("Nawijn-Group-Bioinformatics/FastCAR")
 ############################# Load Libraries ###################################
+
 library(Seurat)
 library(ggplot2)
 library(SingleR)
@@ -38,310 +40,378 @@ library(RColorBrewer)
 library(SingleCellExperiment)
 library(scrubletR)
 library(gprofiler2)
-library(decontX)
-library(SoupX)
+#library(decontX)
+#library(SoupX)
 library(celda)
 library(scater)
 library(stringr)
+library(Matrix)
+library(gridExtra)
+library(qlcMatrix)
+library(FastCAR)
+library(pheatmap)
 set.seed(42)
-
-# ################### Load Output from CellRanger and generate decontaminated Counts ############
-# #deconX= ambient RNA is floating around and got incorporated into GEMs and now cells which should not expres certain RNA seem to express it. 
-# #e.g all cell types show Saa upregulation or whatever. but this is from dying heps that spread their RNA everywhere
-# #So deconX kinda filters 
-# NPC_88.data <- Read10X(data.dir = "./00_raw_data/iAL88") #initializes Seurat object with the non normalized data, in the data dir, mtx file, barcodes.tsv files and genes.tsv files have to be
-# NPC_88 <- CreateSeuratObject(count = NPC_88.data, project = "FK44_NPC_88", min.cells = 3, min.features = 200)
-# counts <- GetAssayData(object = NPC_88, layer = "counts")
-# sce_88 <- SingleCellExperiment(list(counts = counts))
-# sce_88 <- decontX(sce_88)
-# NPC_88[["decontXcounts"]] <- CreateAssayObject(counts = decontXcounts(sce_88))
+#####Load Output from CellRanger and generated Decon with FastCAR #######
+#### FastCar iAL87----
+  cellExpressionFolder  = paste0("./00_raw_data/Liver_NPC_iAL87_transcriptome/filtered_feature_bc_matrix/")
+  fullMatrixFolder      = paste0("./00_raw_data/Liver_NPC_iAL87_transcriptome/raw_feature_bc_matrix/")
+  cellMatrix     = Read10X(cellExpressionFolder)
+  fullMatrix     = Read10X(fullMatrixFolder)
+  ambProfile = describe.ambient.RNA.sequence(fullMatrix = fullMatrix,  start = 10, stop = 500,  by = 10, contaminationChanceCutoff = 0.05)
+  plot.ambient.profile(ambProfile)
+  correctionEffectProfile = describe.correction.effect(fullMatrix, cellMatrix, 50, 250, 25, 0.05)
+  plot.correction.effect.chance(correctionEffectProfile)
+  plot.correction.effect.removal(correctionEffectProfile)
+  emptyDropletCutoff = recommend.empty.cutoff(ambProfile)
+  contaminationChanceCutoff = 0.05
+  ambientProfile = determine.background.to.remove(fullMatrix, emptyDropletCutoff, contaminationChanceCutoff)
+  cellMatrix     = remove.background(cellMatrix, ambientProfile)
+  NPC_87= CreateSeuratObject(cellMatrix)
+ 
+#### FastCar iAL88----
+  cellExpressionFolder  = paste0("./00_raw_data/Liver_NPC_iAL88_transcriptome/filtered_feature_bc_matrix/")
+  fullMatrixFolder      = paste0("./00_raw_data/Liver_NPC_iAL88_transcriptome/raw_feature_bc_matrix/")
+  cellMatrix     = Read10X(cellExpressionFolder)
+  fullMatrix     = Read10X(fullMatrixFolder)
+  ambProfile = describe.ambient.RNA.sequence(fullMatrix = fullMatrix,  start = 10, stop = 500,  by = 10, contaminationChanceCutoff = 0.05)
+  plot.ambient.profile(ambProfile)
+  correctionEffectProfile = describe.correction.effect(fullMatrix, cellMatrix, 50, 250, 25, 0.05)
+  plot.correction.effect.chance(correctionEffectProfile)
+  plot.correction.effect.removal(correctionEffectProfile)
+  emptyDropletCutoff = recommend.empty.cutoff(ambProfile)
+  contaminationChanceCutoff = 0.05
+  ambientProfile = determine.background.to.remove(fullMatrix, emptyDropletCutoff, contaminationChanceCutoff)
+  cellMatrix     = remove.background(cellMatrix, ambientProfile)
+  NPC_88= CreateSeuratObject(cellMatrix)
+  
+#### FastCar iAL91----
+  cellExpressionFolder  = paste0("./00_raw_data/Liver_NPC_iAL91_transcriptome/filtered_feature_bc_matrix/")
+  fullMatrixFolder      = paste0("./00_raw_data/Liver_NPC_iAL91_transcriptome/raw_feature_bc_matrix/")
+  cellMatrix     = Read10X(cellExpressionFolder)
+  fullMatrix     = Read10X(fullMatrixFolder)
+  ambProfile = describe.ambient.RNA.sequence(fullMatrix = fullMatrix,  start = 10, stop = 500,  by = 10, contaminationChanceCutoff = 0.05)
+  plot.ambient.profile(ambProfile)
+  correctionEffectProfile = describe.correction.effect(fullMatrix, cellMatrix, 50, 250, 25, 0.05)
+  plot.correction.effect.chance(correctionEffectProfile)
+  plot.correction.effect.removal(correctionEffectProfile)
+  emptyDropletCutoff = recommend.empty.cutoff(ambProfile)
+  contaminationChanceCutoff = 0.05
+  ambientProfile = determine.background.to.remove(fullMatrix, emptyDropletCutoff, contaminationChanceCutoff)
+  cellMatrix     = remove.background(cellMatrix, ambientProfile)
+  NPC_91= CreateSeuratObject(cellMatrix)
+  
+#### FastCar iAL92----
+  cellExpressionFolder  = paste0("./00_raw_data/Liver_NPC_iAL92_transcriptome/filtered_feature_bc_matrix/")
+  fullMatrixFolder      = paste0("./00_raw_data/Liver_NPC_iAL92_transcriptome/raw_feature_bc_matrix/")
+  cellMatrix     = Read10X(cellExpressionFolder)
+  fullMatrix     = Read10X(fullMatrixFolder)
+  ambProfile = describe.ambient.RNA.sequence(fullMatrix = fullMatrix,  start = 10, stop = 500,  by = 10, contaminationChanceCutoff = 0.05)
+  plot.ambient.profile(ambProfile)
+  correctionEffectProfile = describe.correction.effect(fullMatrix, cellMatrix, 50, 250, 25, 0.05)
+  plot.correction.effect.chance(correctionEffectProfile)
+  plot.correction.effect.removal(correctionEffectProfile)
+  emptyDropletCutoff = recommend.empty.cutoff(ambProfile)
+  contaminationChanceCutoff = 0.05
+  ambientProfile = determine.background.to.remove(fullMatrix, emptyDropletCutoff, contaminationChanceCutoff)
+  cellMatrix     = remove.background(cellMatrix, ambientProfile)
+  NPC_92= CreateSeuratObject(cellMatrix)
+# # ################### Load Output from CellRanger and generate decontaminated Counts with DeconX ############
+# # #deconX= ambient RNA is floating around and got incorporated into GEMs and now cells which should not expres certain RNA seem to express it. 
+# # #e.g all cell types show Saa upregulation or whatever. but this is from dying heps that spread their RNA everywhere
+# # #So deconX kinda filters 
+# # NPC_88.data <- Read10X(data.dir = "./00_raw_data/iAL88") #initializes Seurat object with the non normalized data, in the data dir, mtx file, barcodes.tsv files and genes.tsv files have to be
+# # NPC_88 <- CreateSeuratObject(count = NPC_88.data, project = "FK44_NPC_88", min.cells = 3, min.features = 200)
+# # counts <- GetAssayData(object = NPC_88, layer = "counts")
+# # sce_88 <- SingleCellExperiment(list(counts = counts))
+# # sce_88 <- decontX(sce_88)
+# # NPC_88[["decontXcounts"]] <- CreateAssayObject(counts = decontXcounts(sce_88))
+# # 
+# # NPC_91.data <- Read10X(data.dir = "./00_raw_data/iAL91") #initializes Seurat object with the non normalized data, in the data dir, mtx file, barcodes.tsv files and genes.tsv files have to be
+# # NPC_91 <- CreateSeuratObject(count = NPC_91.data, project = "FK44_NPC_91", min.cells = 3, min.features = 200)
+# # counts <- GetAssayData(object = NPC_91, layer = "counts")
+# # sce_91 <- SingleCellExperiment(list(counts = counts))
+# # sce_91 <- decontX(sce_91)
+# # NPC_91[["decontXcounts"]] <- CreateAssayObject(counts = decontXcounts(sce_91))
+# # 
+# # 
+# # NPC_92.data <- Read10X(data.dir = "./00_raw_data/iAL92") #initializes Seurat object with the non normalized data, in the data dir, mtx file, barcodes.tsv files and genes.tsv files have to be
+# # NPC_92 <- CreateSeuratObject(count = NPC_92.data, project = "FK44_NPC_92", min.cells = 3, min.features = 200)
+# # counts <- GetAssayData(object = NPC_92, layer = "counts")
+# # sce_92 <- SingleCellExperiment(list(counts = counts))
+# # sce_92 <- decontX(sce_92)
+# # NPC_92[["decontXcounts"]] <- CreateAssayObject(counts = decontXcounts(sce_92))
+# # 
+# # ###################################### Visualize the effect of DeconX #############################################################
+# # umap <- reducedDim(sce_87, "decontX_UMAP")
+# # plotDimReduceCluster(x = sce_87$decontX_clusters,
+# #                      dim1 = umap[, 1], dim2 = umap[, 2])
+# # 
+# # plotDecontXContamination(sce_87)
+# # 
+# # sce_87 <- logNormCounts(sce_87)
+# # 
+# # plotDimReduceFeature(as.matrix(logcounts(sce_87)),
+# #                      dim1 = umap[, 1],
+# #                      dim2 = umap[, 2],
+# #                      features = c("Hpd","C1qc","Ptprb", "Cd79a","Skap1", "Ccl5", "Tyrobp", "Spp1","Dapp1","S100a9", "Dcn", "Adgb", "Rbms3", "Snca" , "Cadm1"),
+# #                      exactMatch = TRUE)
+# # 
+# # markers <- list(Hep_Markers=c( "Hpd", "Alb"),
+# #                 T_Markers =c("Cd3e", "Cd3d"),
+# #                 NK_Markers =c("Cd56","Cd16"),
+# #                 B_Markers = c("Cd19, Cd79a"),
+# #                 M_Markers = c("C1qc"),
+# #                 SAA = c("Saa1"))
+# # #cellTypeMappings <- list(Tcells = 2, Bcells = 5, Hepatocytes = 1, NKcells = 6)
+# # #The percetage of cells within a cluster that have detectable expression of marker genes
+# # plotDecontXMarkerPercentage(sce_87,
+# #                             markers = markers,
+# #                             #groupClusters = cellTypeMappings,
+# #                             assayName = c("counts", "decontXcounts"))
+# # 
+# # 
+# # #Some helpful hints when using plotDecontXMarkerPercentage:
+# # #  
+# # #  Cell clusters can be renamed and re-grouped using the groupCluster parameter, which also needs to be a named list. 
+# # #If groupCluster is used, cell clusters not included in the list will be excluded in the barplot. For example, if we wanted to group T-cells and NK-cells together, 
+# # #we could set cellTypeMappings <- list(NK_Tcells = c(2,6), Bcells = 5, Monocytes = 1)
+# # #The level a gene that needs to be expressed to be considered detected in a cell can be adjusted using the threshold parameter.
+# # #If you are not using a SingleCellExperiment, then you will need to supply the original counts matrix or the decontaminated counts matrix as the first argument to generate the barplots.
+# # 
+# # plotDecontXMarkerExpression(sce_87,
+# #                             markers = markers[["T_Markers"]],
+# #                             groupClusters = list(Tcells = 2, Bcells = 5, Hepatocytes = 1, NKcells = 6),
+# #                             ncol = 3)
+# # sce_87 <- logNormCounts(sce_87,
+# #                         exprs_values = "decontXcounts",
+# #                         name = "decontXlogcounts")
+# # 
+# # plotDecontXMarkerExpression(sce_87,
+# #                             markers = markers[["Monocyte_Markers"]],
+# #                             #groupClusters = cellTypeMappings,
+# #                             ncol = 3,
+# #                             assayName = c("logcounts", "decontXlogcounts"))
+# # 
+# # sce_87 <- logNormCounts(sce_87,
+# #                         exprs_values = "decontXcounts",
+# #                         name = "decontXlogcounts")
+# # 
+# # 
+# # 
+# # 
+# # 
+# ###########################Load Data and Decontaminate with SoupX ##################
+# #### Soup Decont for iAL87----
 # 
-# NPC_91.data <- Read10X(data.dir = "./00_raw_data/iAL91") #initializes Seurat object with the non normalized data, in the data dir, mtx file, barcodes.tsv files and genes.tsv files have to be
-# NPC_91 <- CreateSeuratObject(count = NPC_91.data, project = "FK44_NPC_91", min.cells = 3, min.features = 200)
-# counts <- GetAssayData(object = NPC_91, layer = "counts")
-# sce_91 <- SingleCellExperiment(list(counts = counts))
-# sce_91 <- decontX(sce_91)
-# NPC_91[["decontXcounts"]] <- CreateAssayObject(counts = decontXcounts(sce_91))
+# sc = load10X('./00_raw_data/Liver_NPC_iAL87_transcriptome')
+# sc = setClusters(sc, sc$metaData$clustersFine)
+# ##Vizuals----
+# 
+# dd = sc$metaData[colnames(sc$toc), ]
+# mids = aggregate(cbind(tSNE1, tSNE2) ~ clustersFine, data = dd, FUN = mean)
+# gg = ggplot(dd, aes(tSNE1, tSNE2))+
+#  geom_point(aes(colour = clustersFine), size = 0.2) + 
+#   geom_label(data = mids, aes(label = clustersFine)) + ggtitle("NPC 87") + 
+#   guides(colour = guide_legend(override.aes = list(size = 1)))
+# plot(gg)
+# 
+# dd$val = sc$toc["Saa1", ]
+# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
+# plot(gg)
+# 
+# dd$val = sc$toc["Alb", ]
+# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
+# plot(gg)
+# 
+# gg = plotMarkerMap(sc, "Alb")
+# plot(gg)
+# 
+# dd$val = sc$toc["Cd3e", ]
+# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
+# plot(gg)
+# 
+# gg = plotMarkerMap(sc, "Cd3e")
+# plot(gg)
 # 
 # 
-# NPC_92.data <- Read10X(data.dir = "./00_raw_data/iAL92") #initializes Seurat object with the non normalized data, in the data dir, mtx file, barcodes.tsv files and genes.tsv files have to be
-# NPC_92 <- CreateSeuratObject(count = NPC_92.data, project = "FK44_NPC_92", min.cells = 3, min.features = 200)
-# counts <- GetAssayData(object = NPC_92, layer = "counts")
-# sce_92 <- SingleCellExperiment(list(counts = counts))
-# sce_92 <- decontX(sce_92)
-# NPC_92[["decontXcounts"]] <- CreateAssayObject(counts = decontXcounts(sce_92))
+# dd$val = sc$toc["Cd19", ]
+# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
+# plot(gg)
 # 
-# ###################################### Visualize the effect of DeconX #############################################################
-# umap <- reducedDim(sce_87, "decontX_UMAP")
-# plotDimReduceCluster(x = sce_87$decontX_clusters,
-#                      dim1 = umap[, 1], dim2 = umap[, 2])
-# 
-# plotDecontXContamination(sce_87)
-# 
-# sce_87 <- logNormCounts(sce_87)
-# 
-# plotDimReduceFeature(as.matrix(logcounts(sce_87)),
-#                      dim1 = umap[, 1],
-#                      dim2 = umap[, 2],
-#                      features = c("Hpd","C1qc","Ptprb", "Cd79a","Skap1", "Ccl5", "Tyrobp", "Spp1","Dapp1","S100a9", "Dcn", "Adgb", "Rbms3", "Snca" , "Cadm1"),
-#                      exactMatch = TRUE)
-# 
-# markers <- list(Hep_Markers=c( "Hpd", "Alb"),
-#                 T_Markers =c("Cd3e", "Cd3d"),
-#                 NK_Markers =c("Cd56","Cd16"),
-#                 B_Markers = c("Cd19, Cd79a"),
-#                 M_Markers = c("C1qc"),
-#                 SAA = c("Saa1"))
-# #cellTypeMappings <- list(Tcells = 2, Bcells = 5, Hepatocytes = 1, NKcells = 6)
-# #The percetage of cells within a cluster that have detectable expression of marker genes
-# plotDecontXMarkerPercentage(sce_87,
-#                             markers = markers,
-#                             #groupClusters = cellTypeMappings,
-#                             assayName = c("counts", "decontXcounts"))
+# gg = plotMarkerMap(sc, "Cd19")
+# plot(gg)
 # 
 # 
-# #Some helpful hints when using plotDecontXMarkerPercentage:
-# #  
-# #  Cell clusters can be renamed and re-grouped using the groupCluster parameter, which also needs to be a named list. 
-# #If groupCluster is used, cell clusters not included in the list will be excluded in the barplot. For example, if we wanted to group T-cells and NK-cells together, 
-# #we could set cellTypeMappings <- list(NK_Tcells = c(2,6), Bcells = 5, Monocytes = 1)
-# #The level a gene that needs to be expressed to be considered detected in a cell can be adjusted using the threshold parameter.
-# #If you are not using a SingleCellExperiment, then you will need to supply the original counts matrix or the decontaminated counts matrix as the first argument to generate the barplots.
+# dd$val = sc$toc["Clec4f", ]
+# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
+# plot(gg)
 # 
-# plotDecontXMarkerExpression(sce_87,
-#                             markers = markers[["T_Markers"]],
-#                             groupClusters = list(Tcells = 2, Bcells = 5, Hepatocytes = 1, NKcells = 6),
-#                             ncol = 3)
-# sce_87 <- logNormCounts(sce_87,
-#                         exprs_values = "decontXcounts",
-#                         name = "decontXlogcounts")
+# gg = plotMarkerMap(sc, "Clec4f")
+# plot(gg)
 # 
-# plotDecontXMarkerExpression(sce_87,
-#                             markers = markers[["Monocyte_Markers"]],
-#                             #groupClusters = cellTypeMappings,
-#                             ncol = 3,
-#                             assayName = c("logcounts", "decontXlogcounts"))
+# dd$val = sc$toc["Ptprc", ]
+# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
+# plot(gg)
 # 
-# sce_87 <- logNormCounts(sce_87,
-#                         exprs_values = "decontXcounts",
-#                         name = "decontXlogcounts")
+# gg = plotMarkerMap(sc, "Ptprc")
+# plot(gg)
+# 
+# dd$val = sc$toc["Ptprb", ]
+# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
+# plot(gg)
+# 
+# gg = plotMarkerMap(sc, "Ptprb")
+# plot(gg)
 # 
 # 
+# #### Stuff----
+# 
+# #sc = autoEstCont(sc)
+# #sc = setContaminationFraction(sc, 0.2)
+# head(sc$soupProfile[order(sc$soupProfile$est, decreasing = TRUE), ], n = 20)
+# 
+# nonExpressedGeneList = list(HB = c("Saa1", "Saa2", "Alb"), IG = c("Hbb", "Hba2"))
+# ig =  c("Saa1", "Saa2", "Alb","Hbb", "Hba2")
+# useToEst = estimateNonExpressingCells(sc, nonExpressedGeneList = list(IG = ig), clusters = FALSE)
+# useToEst = estimateNonExpressingCells(sc, nonExpressedGeneList = list(IG = ig))
+# out = adjustCounts(sc)
+# plotChangeMap(sc, out, "Saa1")
+# dd$Saa1 = sc$toc["Saa1", ]
+# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Saa1 > 0))
+# plot(gg)
+# gg = plotMarkerMap(sc, "Saa1")
+# plot(gg)
+# NPC_87 = CreateSeuratObject(out)
 # 
 # 
+# #### Soup Decont for iAL88----
 # 
-###########################Load Data and Decontaminate with SoupX ##################
-#### Soup Decont for iAL87----
-
-sc = load10X('./00_raw_data/Liver_NPC_iAL87_transcriptome')
-sc = setClusters(sc, sc$metaData$clustersFine)
-##Vizuals----
-
-dd = sc$metaData[colnames(sc$toc), ]
-mids = aggregate(cbind(tSNE1, tSNE2) ~ clustersFine, data = dd, FUN = mean)
-gg = ggplot(dd, aes(tSNE1, tSNE2))+
- geom_point(aes(colour = clustersFine), size = 0.2) + 
-  geom_label(data = mids, aes(label = clustersFine)) + ggtitle("NPC 87") + 
-  guides(colour = guide_legend(override.aes = list(size = 1)))
-plot(gg)
-
-dd$val = sc$toc["Saa1", ]
-gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-plot(gg)
-
-dd$val = sc$toc["Alb", ]
-gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-plot(gg)
-
-gg = plotMarkerMap(sc, "Alb")
-plot(gg)
-
-dd$val = sc$toc["Cd3e", ]
-gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-plot(gg)
-
-gg = plotMarkerMap(sc, "Cd3e")
-plot(gg)
-
-
-dd$val = sc$toc["Cd19", ]
-gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-plot(gg)
-
-gg = plotMarkerMap(sc, "Cd19")
-plot(gg)
-
-
-dd$val = sc$toc["Clec4f", ]
-gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-plot(gg)
-
-gg = plotMarkerMap(sc, "Clec4f")
-plot(gg)
-
-dd$val = sc$toc["Ptprc", ]
-gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-plot(gg)
-
-gg = plotMarkerMap(sc, "Ptprc")
-plot(gg)
-
-dd$val = sc$toc["Ptprb", ]
-gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-plot(gg)
-
-gg = plotMarkerMap(sc, "Ptprb")
-plot(gg)
-
-
-#### Stuff----
-
-#sc = autoEstCont(sc)
-#sc = setContaminationFraction(sc, 0.2)
-head(sc$soupProfile[order(sc$soupProfile$est, decreasing = TRUE), ], n = 20)
-
-nonExpressedGeneList = list(HB = c("Saa1", "Saa2", "Alb"), IG = c("Hbb", "Hba2"))
-ig =  c("Saa1", "Saa2", "Alb","Hbb", "Hba2")
-useToEst = estimateNonExpressingCells(sc, nonExpressedGeneList = list(IG = ig), clusters = FALSE)
-useToEst = estimateNonExpressingCells(sc, nonExpressedGeneList = list(IG = ig))
-out = adjustCounts(sc)
-plotChangeMap(sc, out, "Saa1")
-dd$Saa1 = sc$toc["Saa1", ]
-gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Saa1 > 0))
-plot(gg)
-gg = plotMarkerMap(sc, "Saa1")
-plot(gg)
-NPC_87 = CreateSeuratObject(out)
-
-
-#### Soup Decont for iAL88----
-
-sc = load10X('./00_raw_data/Liver_NPC_iAL88_transcriptome')
-sc = setClusters(sc, sc$metaData$clustersFine)
-##Vizuals----
-
-dd = sc$metaData[colnames(sc$toc), ]
-mids = aggregate(cbind(tSNE1, tSNE2) ~ clustersFine, data = dd, FUN = mean)
-gg = ggplot(dd, aes(tSNE1, tSNE2))+
-  geom_point(aes(colour = clustersFine), size = 0.2) + 
-  geom_label(data = mids, aes(label = clustersFine)) + ggtitle("NPC 88") + 
-  guides(colour = guide_legend(override.aes = list(size = 1)))
-plot(gg)
-
-dd$Saa1 = sc$toc["Saa1", ]
-gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Saa1 > 0))
-plot(gg)
-
-dd$Alb = sc$toc["Alb", ]
-gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Alb > 0))
-plot(gg)
-
-gg = plotMarkerMap(sc, "Alb")
-plot(gg)
-
-dd$Cd3e = sc$toc["Cd3e", ]
-gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Cd3e > 0))
-plot(gg)
-
-gg = plotMarkerMap(sc, "Cd3e")
-plot(gg)
-#### Stuff----
-#sc = autoEstCont(sc)
-sc = setContaminationFraction(sc, 0.2)
-out = adjustCounts(sc)
-plotChangeMap(sc, out, "Saa1")
-dd$Saa1 = sc$toc["Saa1", ]
-gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Saa1 > 0))
-plot(gg)
-gg = plotMarkerMap(sc, "Saa1")
-plot(gg)
-NPC_88 = CreateSeuratObject(out)
-
-#### Soup Decont for iAL91----
-
-sc = load10X('./00_raw_data/Liver_NPC_iAL91_transcriptome')
-sc = setClusters(sc, sc$metaData$clustersFine)
-##Vizuals----
-
-dd = sc$metaData[colnames(sc$toc), ]
-mids = aggregate(cbind(tSNE1, tSNE2) ~ clustersFine, data = dd, FUN = mean)
-gg = ggplot(dd, aes(tSNE1, tSNE2))+
-  geom_point(aes(colour = clustersFine), size = 0.2) + 
-  geom_label(data = mids, aes(label = clustersFine)) + ggtitle("NPC 91") + 
-  guides(colour = guide_legend(override.aes = list(size = 1)))
-plot(gg)
-
-dd$Saa1 = sc$toc["Saa1", ]
-gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Saa1 > 0))
-plot(gg)
-
-dd$Alb = sc$toc["Alb", ]
-gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Alb > 0))
-plot(gg)
-
-gg = plotMarkerMap(sc, "Alb")
-plot(gg)
-
-dd$Cd3e = sc$toc["Cd3e", ]
-gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Cd3e > 0))
-plot(gg)
-
-gg = plotMarkerMap(sc, "Cd3e")
-plot(gg)
-#### Stuff----
-#sc = autoEstCont(sc)
-sc = setContaminationFraction(sc, 0.2)
-out = adjustCounts(sc)
-plotChangeMap(sc, out, "Saa1")
-dd$Saa1 = sc$toc["Saa1", ]
-gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Saa1 > 0))
-plot(gg)
-gg = plotMarkerMap(sc, "Saa1")
-plot(gg)
-NPC_91 = CreateSeuratObject(out)
-#### Soup Decont for iAL92----
-
-sc = load10X('./00_raw_data/Liver_NPC_iAL92_transcriptome')
-sc = setClusters(sc, sc$metaData$clustersFine)
-##Vizuals----
-
-dd = sc$metaData[colnames(sc$toc), ]
-mids = aggregate(cbind(tSNE1, tSNE2) ~ clustersFine, data = dd, FUN = mean)
-gg = ggplot(dd, aes(tSNE1, tSNE2))+
-  geom_point(aes(colour = clustersFine), size = 0.2) + 
-  geom_label(data = mids, aes(label = clustersFine)) + ggtitle("NPC 92") + 
-  guides(colour = guide_legend(override.aes = list(size = 1)))
-plot(gg)
-
-dd$Saa1 = sc$toc["Saa1", ]
-gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Saa1 > 0))
-plot(gg)
-
-dd$Alb = sc$toc["Alb", ]
-gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Alb > 0))
-plot(gg)
-
-gg = plotMarkerMap(sc, "Alb")
-plot(gg)
-
-dd$Cd3e = sc$toc["Cd3e", ]
-gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Cd3e > 0))
-plot(gg)
-
-gg = plotMarkerMap(sc, "Cd3e")
-plot(gg)
-#### Stuff----
-#sc = autoEstCont(sc)
-sc = setContaminationFraction(sc, 0.2)
-out = adjustCounts(sc)
-plotChangeMap(sc, out, "Saa1")
-dd$Saa1 = sc$toc["Saa1", ]
-gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Saa1 > 0))
-plot(gg)
-gg = plotMarkerMap(sc, "Saa1")
-plot(gg)
-NPC_92 = CreateSeuratObject(out)
-
+# sc = load10X('./00_raw_data/Liver_NPC_iAL88_transcriptome')
+# sc = setClusters(sc, sc$metaData$clustersFine)
+# ##Vizuals----
+# 
+# dd = sc$metaData[colnames(sc$toc), ]
+# mids = aggregate(cbind(tSNE1, tSNE2) ~ clustersFine, data = dd, FUN = mean)
+# gg = ggplot(dd, aes(tSNE1, tSNE2))+
+#   geom_point(aes(colour = clustersFine), size = 0.2) + 
+#   geom_label(data = mids, aes(label = clustersFine)) + ggtitle("NPC 88") + 
+#   guides(colour = guide_legend(override.aes = list(size = 1)))
+# plot(gg)
+# 
+# dd$Saa1 = sc$toc["Saa1", ]
+# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Saa1 > 0))
+# plot(gg)
+# 
+# dd$Alb = sc$toc["Alb", ]
+# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Alb > 0))
+# plot(gg)
+# 
+# gg = plotMarkerMap(sc, "Alb")
+# plot(gg)
+# 
+# dd$Cd3e = sc$toc["Cd3e", ]
+# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Cd3e > 0))
+# plot(gg)
+# 
+# gg = plotMarkerMap(sc, "Cd3e")
+# plot(gg)
+# #### Stuff----
+# #sc = autoEstCont(sc)
+# sc = setContaminationFraction(sc, 0.2)
+# out = adjustCounts(sc)
+# plotChangeMap(sc, out, "Saa1")
+# dd$Saa1 = sc$toc["Saa1", ]
+# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Saa1 > 0))
+# plot(gg)
+# gg = plotMarkerMap(sc, "Saa1")
+# plot(gg)
+# NPC_88 = CreateSeuratObject(out)
+# 
+# #### Soup Decont for iAL91----
+# 
+# sc = load10X('./00_raw_data/Liver_NPC_iAL91_transcriptome')
+# sc = setClusters(sc, sc$metaData$clustersFine)
+# ##Vizuals----
+# 
+# dd = sc$metaData[colnames(sc$toc), ]
+# mids = aggregate(cbind(tSNE1, tSNE2) ~ clustersFine, data = dd, FUN = mean)
+# gg = ggplot(dd, aes(tSNE1, tSNE2))+
+#   geom_point(aes(colour = clustersFine), size = 0.2) + 
+#   geom_label(data = mids, aes(label = clustersFine)) + ggtitle("NPC 91") + 
+#   guides(colour = guide_legend(override.aes = list(size = 1)))
+# plot(gg)
+# 
+# dd$Saa1 = sc$toc["Saa1", ]
+# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Saa1 > 0))
+# plot(gg)
+# 
+# dd$Alb = sc$toc["Alb", ]
+# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Alb > 0))
+# plot(gg)
+# 
+# gg = plotMarkerMap(sc, "Alb")
+# plot(gg)
+# 
+# dd$Cd3e = sc$toc["Cd3e", ]
+# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Cd3e > 0))
+# plot(gg)
+# 
+# gg = plotMarkerMap(sc, "Cd3e")
+# plot(gg)
+# #### Stuff----
+# #sc = autoEstCont(sc)
+# sc = setContaminationFraction(sc, 0.2)
+# out = adjustCounts(sc)
+# plotChangeMap(sc, out, "Saa1")
+# dd$Saa1 = sc$toc["Saa1", ]
+# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Saa1 > 0))
+# plot(gg)
+# gg = plotMarkerMap(sc, "Saa1")
+# plot(gg)
+# NPC_91 = CreateSeuratObject(out)
+# #### Soup Decont for iAL92----
+# 
+# sc = load10X('./00_raw_data/Liver_NPC_iAL92_transcriptome')
+# sc = setClusters(sc, sc$metaData$clustersFine)
+# ##Vizuals----
+# 
+# dd = sc$metaData[colnames(sc$toc), ]
+# mids = aggregate(cbind(tSNE1, tSNE2) ~ clustersFine, data = dd, FUN = mean)
+# gg = ggplot(dd, aes(tSNE1, tSNE2))+
+#   geom_point(aes(colour = clustersFine), size = 0.2) + 
+#   geom_label(data = mids, aes(label = clustersFine)) + ggtitle("NPC 92") + 
+#   guides(colour = guide_legend(override.aes = list(size = 1)))
+# plot(gg)
+# 
+# dd$Saa1 = sc$toc["Saa1", ]
+# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Saa1 > 0))
+# plot(gg)
+# 
+# dd$Alb = sc$toc["Alb", ]
+# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Alb > 0))
+# plot(gg)
+# 
+# gg = plotMarkerMap(sc, "Alb")
+# plot(gg)
+# 
+# dd$Cd3e = sc$toc["Cd3e", ]
+# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Cd3e > 0))
+# plot(gg)
+# 
+# gg = plotMarkerMap(sc, "Cd3e")
+# plot(gg)
+# #### Stuff----
+# #sc = autoEstCont(sc)
+# sc = setContaminationFraction(sc, 0.2)
+# out = adjustCounts(sc)
+# plotChangeMap(sc, out, "Saa1")
+# dd$Saa1 = sc$toc["Saa1", ]
+# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Saa1 > 0))
+# plot(gg)
+# gg = plotMarkerMap(sc, "Saa1")
+# plot(gg)
+# NPC_92 = CreateSeuratObject(out)
+# 
 ########################## Kategorien Stimlulation und Sex hinzufügen, evtl noch age? ####################
 NPC_87$stim <- "TAM"
 NPC_88$stim <- "EtOH"
