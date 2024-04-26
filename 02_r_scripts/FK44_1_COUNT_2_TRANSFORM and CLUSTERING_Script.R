@@ -135,7 +135,7 @@ NPC_ALL_TRANSFORM <- FindClusters(NPC_ALL_TRANSFORM, verbose = F,resolution = 0.
 #PrintFindClustersParams(object = NPC_ALL_TRANSFORM)
 #table(NPC_ALL_TRANSFORM[[]]$seurat_clusters)
 
-png("./03_plots/01_QC/QC_3_CLUSTERING_R1.png")
+png("./03_plots/QC_3_CLUSTERING_R1.png")
 DimPlot(NPC_ALL_TRANSFORM, label = T , repel = T, label.size = 3)
 dev.off()
 # png("./03_plots/01_QC/QC_3_CLUSTERING_R5.png")
@@ -169,7 +169,8 @@ table(mouseRNA.main$pruned.labels)
 table(mouseRNA.fine$pruned.labels)
 NPC_ALL_TRANSFORM@meta.data$mouseRNA.main <- mouseRNA.main$pruned.labels
 NPC_ALL_TRANSFORM@meta.data$mouseRNA.fine <- mouseRNA.fine$pruned.labels
-
+# rm(mouseRNA.fine, mouseRNA.main, mouseRNA.ref, sce)
+# #"MouseRNAseqData set fits better than MonacoImmuneData and ImmGenData set # So deleted code for these datasets.
 
 # #### Try to Use Scott "Spatial Protegenomics Macro niches as Ref data set for Annotations-------
 # expression_matrix_Scott <- ReadMtx(  feature.column = 1, "./99_other/rawData_mouseStSt/countTable_mouseStSt/matrix.mtx.gz", features = "./99_other/rawData_mouseStSt/countTable_mouseStSt/features.tsv.gz",
@@ -181,21 +182,31 @@ NPC_ALL_TRANSFORM@meta.data$mouseRNA.fine <- mouseRNA.fine$pruned.labels
 # 
 # 
 # 
-# rm(mouseRNA.fine, mouseRNA.main, mouseRNA.ref, sce)
-# #"MouseRNAseqData set fits better than MonacoImmuneData and ImmGenData set # So deleted code for these datasets.
+
 # 
 ############## Vizualise annotated Clusters ###################################
 #Vizualise Cluster No ----
+png("./03_plots/Clustering_1_ClusterNo.png")
 DimPlot(NPC_ALL_TRANSFORM, label = T, repel = T ) + ggtitle("Unsupervised clustering")+ NoLegend()
+dev.off()
 #Vizualise Clusters with Fine Annotation ----
+png("./03_plots/Clustering_1_ClusterMouseFine.png")
 DimPlot(NPC_ALL_TRANSFORM, label = T, repel = T, group.by = "mouseRNA.fine") + ggtitle("Annotation Fine")+NoLegend()
+dev.off()
 #Vizualise Cluster with Main Annoation----
+png("./03_plots/Clustering_1_ClusterMouseMain.png")
 DimPlot(NPC_ALL_TRANSFORM, label = T, repel = T, group.by = "mouseRNA.main") + ggtitle("Annotation Main")+NoLegend()
+dev.off()
 #Vizualise Clusters with Annotation of Sex ----
+png("./03_plots/Clustering_1_ClusterSex.png")
 DimPlot(NPC_ALL_TRANSFORM, label = F, repel = T, group.by = "sex") + ggtitle("Sex")
+dev.off()
 #Vizualise Cluster with Annotation of Stimulus ----
+png("./03_plots/Clustering_1_ClusterStim.png")
 DimPlot(NPC_ALL_TRANSFORM, label = F, repel = T, group.by = "stim") + ggtitle("Stimulation")
+dev.off()
 #Vizualise Cluster with Annotation of Animal ----
+png("./03_plots/Clustering_1_ClusterAnimal.png")
 DimPlot(NPC_ALL_TRANSFORM, label = F, repel = T, group.by = "sample") + ggtitle("Animal")
 
 ################### Save the SCT Transformed Seurat Object with Annotations############
@@ -251,25 +262,41 @@ Bcell_TAM_response <- FindMarkers(Bcell_TAM_response, assay = "SCT", ident.2 = "
 
 
 ########################### Volcano Plots DE Genes between clusters ###################################################
+png("./03_plots/Clustering_2_Volcano_Hep.png")
 EnhancedVolcano(Hep_TAM_response,lab = rownames(Hep_TAM_response), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj" ,title = "DE Hepatocytes TAM vs EtOH", caption = 'FC cutoff, 1; p-value cutoff, 10e-5')
+dev.off()
+png("./03_plots/Clustering_2_Volcano_T.png")
 EnhancedVolcano(Tcell_TAM_response,lab = rownames(Tcell_TAM_response), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj" ,title = "DE T cells TAM vs EtOH", caption = 'FC cutoff, 1; p-value cutoff, 10e-5')
+dev.off()
+png("./03_plots/Clustering_2_Volcano_B.png")
 EnhancedVolcano(Bcell_TAM_response,lab = rownames(Bcell_TAM_response), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj" ,title = "DE B cells TAM vs EtOH", caption = 'FC cutoff, 1; p-value cutoff, 10e-5')
+dev.off()
+png("./03_plots/Clustering_2_Volcano_NK.png")
 EnhancedVolcano(NKcell_TAM_response,lab = rownames(NKcell_TAM_response), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj" ,title = "DE NK cells TAM vs EtOH", caption = 'FC cutoff, 1; p-value cutoff, 10e-5')
+dev.off()
+png("./03_plots/Clustering_2_Volcano_Granulo.png")
 EnhancedVolcano(Granulo_TAM_response,lab = rownames(Granulo_TAM_response), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj" ,title = "DE Granulocytes TAM vs EtOH", caption = 'FC cutoff, 1; p-value cutoff, 10e-5')
+dev.off()
+png("./03_plots/Clustering_2_Volcano_Endo.png")
 EnhancedVolcano(Endo_TAM_response,lab = rownames(Endo_TAM_response), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj" ,title = "DE Endothelial cells TAM vs EtOH", caption = 'FC cutoff, 1; p-value cutoff, 10e-5')
+dev.off()
+png("./03_plots/Clustering_2_Volcano_HSC.png")
 EnhancedVolcano(HSC_TAM_response,lab = rownames(HSC_TAM_response), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj" ,title = "DE Hepatic Stellate Cells TAM vs EtOH", caption = 'FC cutoff, 1; p-value cutoff, 10e-5')
+dev.off()
+png("./03_plots/Clustering_2_Volcano_Macros.png")
 EnhancedVolcano(Macro_TAM_response,lab = rownames(Macro_TAM_response), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj" ,title = "DE Macrophages TAM vs EtOH", caption = 'FC cutoff, 1; p-value cutoff, 10e-5')
+dev.off()
+png("./03_plots/Clustering_2_Volcano_Monos.png")
 EnhancedVolcano(Mono_TAM_response,lab = rownames(Mono_TAM_response), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj" ,title = "DE Monocytes TAM vs EtOH", caption = 'FC cutoff, 1; p-value cutoff, 10e-5')
+dev.off()
+png("./03_plots/Clustering_2_Volcano_DC.png")
 EnhancedVolcano(DC_TAM_response,lab = rownames(DC_TAM_response), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj" ,title = "DE Dendritic Cells TAM vs EtOH", caption = 'FC cutoff, 1; p-value cutoff, 10e-5')
-
-
-
+dev.off()
 ####################################################################################################################
-
+Idents(NPC_ALL_TRANSFORM) <-"mouseRNA.main"
 DefaultAssay(NPC_ALL_TRANSFORM) <- "SCT"
-FeaturePlot(NPC_ALL_TRANSFORM, features = c("Saa2", "GNLY", "IFI6"), split.by = "stim", max.cutoff = 3,cols = c("grey", "red"))
-VlnPlot(NPC_ALL_TRANSFORM, features = c("Saa2", "Nfatc1", "Saa2"), split.by = "stim",group.by = "mouseRNA.main", pt.size = 0, combine = FALSE)
-
+FeaturePlot(NPC_ALL_TRANSFORM, features = c("Saa2", "Saa1", "Alb"), split.by = "stim", max.cutoff = 5,cols = c("grey", "red"))
+VlnPlot(NPC_ALL_TRANSFORM, features = c("Cd3e", "Cd19","Alb","Saa1","Clec4f"), split.by = "stim",group.by = "mouseRNA.main", pt.size = 0, combine = FALSE)
 
 all.markers <- FindAllMarkers(NPC_ALL_TRANSFORM, only.pos = T, min.pct = 0.5, logfc.threshold = 0.5)
 dim(all.markers)
@@ -277,7 +304,7 @@ all.markers %>%  group_by(cluster) %>%  dplyr::filter(avg_log2FC > 1) %>%  slice
 all.markers %>%  group_by(cluster) %>%  dplyr::filter(cluster == "Hepatocytes") %>%  slice_head(n = 100) %>%  ungroup() -> Hep_CLUSTERMARKER
 
 NPC_ALL_TRANSFORM <- SetIdent(NPC_ALL_TRANSFORM, value = "mouseRNA.fine")
-png("./03_plots/UMAP_QC6_CR1_mouseRNA_Anno_fine.png")
+png("./03_plots/Clustering_3_QC6_CR1_mouseRNA_Anno_fine.png")
 DimPlot(NPC_ALL_TRANSFORM, label = F , repel = T, label.size = 3)
 dev.off()
 
@@ -288,41 +315,27 @@ all.markers %>%  group_by(cluster) %>%  dplyr::filter(cluster == "Hepatocytes") 
 
 
 NPC_ALL_TRANSFORM <- SetIdent(NPC_ALL_TRANSFORM, value = "mouseRNA.main")
-png("./03_plots/UMAP_QC6_CR1_mouseRNA_Anno_main.png")
+png("./03_plots/Clustering_3_QC6_CR1_mouseRNA_Anno_main.png")
 DimPlot(NPC_ALL_TRANSFORM, label = T , repel = T, label.size = 3)
 dev.off()
 
 all.markers <- FindAllMarkers(NPC_ALL_TRANSFORM, only.pos = T, min.pct = 0.5, logfc.threshold = 0.5)
 dim(all.markers)
 all.markers %>%  group_by(cluster) %>%  dplyr::filter(avg_log2FC > 1) %>%  slice_head(n = 10) %>%  ungroup() -> top10__MOUSEMAIN_CLUSTERMARKER
-write.csv(top10__MOUSEMAIN_CLUSTERMARKER, "./99_other/CLUSTERING_1_top10_mouseMAIN_CLUSTERMARKER.csv", row.names=FALSE)
-write.csv(top10__MOUSEFINE_CLUSTERMARKER, "./99_other/CLUSTERING_1_top10_mouseFINE_CLUSTERMARKER.csv", row.names=FALSE)
-#NPC_ALL_TRANSFORM <- SetIdent(NPC_ALL_TRANSFORM, value = "monaco.fine")
-#png("./03_plots/UMAP_QC6_monaco_Anno_fine.png")
-#DimPlot(NPC_ALL_TRANSFORM, label = T , repel = T, label.size = 3) + NoLegend()
-#dev.off()
-
-#NPC_ALL_TRANSFORM <- SetIdent(NPC_ALL_TRANSFORM, value = "monaco.main")
-#png("./03_plots/UMAP_QC6_monaco_Anno_main.png")
-#DimPlot(NPC_ALL_TRANSFORM, label = T , repel = T, label.size = 3) + NoLegend()
-#dev.off()
-
-#NPC_ALL_TRANSFORM <- SetIdent(NPC_ALL_TRANSFORM, value = "ImmGenData.main")
-#png("./03_plots/UMAP_QC6_ImmGen_Anno_main.png")
-#DimPlot(NPC_ALL_TRANSFORM, label = F , repel = F, label.size = 3) 
-#dev.off()
+write.csv(top10__MOUSEMAIN_CLUSTERMARKER, "./99_other/Clustering_3_top10_mouseMAIN_CLUSTERMARKER.csv", row.names=FALSE)
+write.csv(top10__MOUSEFINE_CLUSTERMARKER, "./99_other/Clustering_3_op10_mouseFINE_CLUSTERMARKER.csv", row.names=FALSE)
 
 NPC_ALL_TRANSFORM <- SetIdent(NPC_ALL_TRANSFORM, value = "sex")
-png("./03_plots/UMAP_QC6_CR1_Sex.png")
+png("./03_plots/Clustering_3_QC6_CR1_Sex.png")
 DimPlot(NPC_ALL_TRANSFORM, label = F , repel = T, label.size = 3)
 dev.off()
 
 NPC_ALL_TRANSFORM <- SetIdent(NPC_ALL_TRANSFORM, value = "stim")
-png("./03_plots/UMAP_QC6_CR1_Stim.png")
+png("./03_plots/Clustering_3_QC6_CR1_Stim.png")
 DimPlot(NPC_ALL_TRANSFORM, label = F , repel = T, label.size = 3)
 dev.off()
 
-png("./03_plots/UMAP_QC6_CR1_ClusterNo.png")
+png("./03_plots/Clustering_3_QC6_CR1_ClusterNo.png")
 NPC_ALL_TRANSFORM <- SetIdent(NPC_ALL_TRANSFORM, value = "seurat_clusters")
 DimPlot(NPC_ALL_TRANSFORM, label = T , repel = T, label.size = 3)
 dev.off()
