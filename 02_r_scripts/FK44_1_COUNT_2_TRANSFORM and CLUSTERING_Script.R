@@ -50,9 +50,10 @@ set.seed(42)
 #NPC_QC<-readRDS("./01_tidy_data/QC_noQC_NPC.combined")
 #NPC_QC<-readRDS("./01_tidy_data/QC_QC5_NPC_QC5.combined")
 NPC_QC<-readRDS("./01_tidy_data/QC_QC6_NPC_QC6.combined")
-
+DefaultAssay(NPC_QC) <- "decontXcounts"
 ########################## Check if Regression of MT% and CellCycle Score is appropriate ##################################
 all.genes <- rownames(NPC_QC)
+NPC_QC<- NormalizeData(NPC_QC)
 NPC_QC <- ScaleData(NPC_QC, features = all.genes)
 NPC_QC <- RunPCA(NPC_QC, features = VariableFeatures(object = NPC_QC))
 
@@ -124,7 +125,8 @@ rm(NPC_QC_R1, NPC_QC_R10, NPC_QC_R5, NPC_QC_R8)
 # SCTransfrom might be beneficial bc it gices better signal to noise ratio. regression is performed with Mt5 and cell cylce Scores bc they introduce unwanted variation
 # Should I also regress for Sex and Stimulation? Sex variation is also unwanted at the moment
 ## regression mit vst.flavors= "v2" klappt nicht, wenn mit sec oder stim anwenden Fehler in `contrasts<-`(`*tmp*`, value = contr.funs[1 + isOF[nn]]) : Kontraste können nur auf Faktoren mit 2 oder mehr Stufen angewendet werden 
-NPC_ALL_TRANSFORM <- SCTransform(NPC_QC,  vst.flavor= "v2",method = "glmGamPoi", vars.to.regress = c("percent.mt","S.Score","G2M.Score"), verbose = F) 
+DefaultAssay(NPC_QC) <-"decontXcounts"
+NPC_ALL_TRANSFORM <- SCTransform(NPC_QC,  vst.flavor= "v2",method = "glmGamPoi",  verbose = F) #vars.to.regress = c("percent.mt","S.Score","G2M.Score"),
 NPC_ALL_TRANSFORM <- RunPCA(NPC_ALL_TRANSFORM, verbose = F)
 NPC_ALL_TRANSFORM <- RunUMAP(NPC_ALL_TRANSFORM, dims = 1:30, verbose = F)
 NPC_ALL_TRANSFORM <- FindNeighbors(NPC_ALL_TRANSFORM, dims = 1:30, verbose = F)
@@ -208,7 +210,7 @@ dev.off()
 #Vizualise Cluster with Annotation of Animal ----
 png("./03_plots/Clustering_1_ClusterAnimal.png")
 DimPlot(NPC_ALL_TRANSFORM, label = F, repel = T, group.by = "sample") + ggtitle("Animal")
-
+dev.off()
 ################### Save the SCT Transformed Seurat Object with Annotations############
 #saveRDS(NPC_ALL_TRANSFORM, file = "./01_tidy_data/NPC_ALL_TRANSFORM.rds")
 #saveRDS(NPC_ALL_TRANSFORM, file = "./01_tidy_data/NPC_ALL_TRANSFORM_QC5.rds")
