@@ -1,5 +1,5 @@
 #This is the script to perform QC on FK44.1 scRNAseq COUNT data provided by BSF
-
+##FK44.1_COUNT_Ambient_RNA_removal_DecontX_Script##
 ############################ Install Packages #################################
 #install.packages("renv")
 #renv::init()    #creates project library,  lockfile and Rprofile
@@ -70,25 +70,25 @@ for (i in animals){
   decon<- decontX(filtered, background = raw)
   saveRDS(decon, paste0("./01_tidy_data/NPC_",i,"_DecontX.rds"))
   umap <- reducedDim(decon, "decontX_UMAP")
-  png(paste0("./03_plots/QC_0_Ambient_DecontX_",i,"_cluster.png"))
+  png(paste0("./03_plots/0_Ambient_RNA_removal_DecontX/QC_0_Ambient_DecontX_",i,"_cluster.png"))
   p <-plotDimReduceCluster(x = decon$decontX_clusters,dim1 = umap[, 1], dim2 = umap[, 2])
   print(p)
   dev.off()
-  png(paste0("./03_plots/QC_0_Ambient_DecontX_",i,"_cluster_decon.png"))
+  png(paste0("./03_plots/0_Ambient_RNA_removal_DecontX/QC_0_Ambient_DecontX_",i,"_cluster_decon.png"))
   p <-plotDecontXContamination(decon)
   print(p)
   dev.off()
   decon <- logNormCounts(decon)
   
   
-  png((paste0("./03_plots/QC_0_Ambient_DecontX_",i,"_MarkerExpression_all.png"))) 
+  png((paste0("./03_plots/0_Ambient_RNA_removal_DecontX/QC_0_Ambient_DecontX_",i,"_MarkerExpression_all.png"))) 
   p <-plotDecontXMarkerPercentage(decon,markers = markers,#groupClusters = cellTypeMappings,
                               assayName = c("counts", "decontXcounts"))
   print(p)
   dev.off()
   
   for (m in interesting_genes){
-    png((paste0("./03_plots/QC_0_Ambient_DecontX_",i,"_MarkerExpression_",m,".png"))) 
+    png((paste0("./03_plots/0_Ambient_RNA_removal_DecontX/QC_0_Ambient_DecontX_",i,"_MarkerExpression_",m,".png"))) 
     p <-plotDecontXMarkerExpression(decon,
                               markers = m,
                               #groupClusters = list(Tcells = 2, Bcells = 5, Hepatocytes = 1, NKcells = 6),
@@ -99,7 +99,7 @@ for (i in animals){
   #to look at normalized expression
   decon <- logNormCounts(decon,exprs_values = "decontXcounts",name = "decontXlogcounts")
   for (f in interesting_genes){
-    png((paste0("./03_plots/QC_0_Ambient_DecontX_",i,"MarkerExpression_Normalized_",f,".png"))) 
+    png((paste0("./03_plots/0_Ambient_RNA_removal_DecontX/QC_0_Ambient_DecontX_",i,"MarkerExpression_Normalized_",f,".png"))) 
     p<-plotDecontXMarkerExpression(decon,markers =f,#groupClusters = cellTypeMappings,
                                    ncol = 4,         assayName = c("logcounts", "decontXlogcounts"))
     print(p)

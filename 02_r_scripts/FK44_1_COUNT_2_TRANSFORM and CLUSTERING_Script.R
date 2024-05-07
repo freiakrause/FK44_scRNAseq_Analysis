@@ -50,7 +50,7 @@ set.seed(42)
 #NPC_QC<-readRDS("./01_tidy_data/QC_noQC_NPC.combined")
 #NPC_QC<-readRDS("./01_tidy_data/QC_QC5_NPC_QC5.combined")
 NPC_QC<-readRDS("./01_tidy_data/QC_QC6_NPC_QC6.combined")
-DefaultAssay(NPC_QC) <- "decontXcounts"
+
 ########################## Check if Regression of MT% and CellCycle Score is appropriate ##################################
 all.genes <- rownames(NPC_QC)
 NPC_QC<- NormalizeData(NPC_QC)
@@ -80,10 +80,12 @@ dev.off()
 #To get cell cycle to need to convert cell cycle gene list which is for human into mouse
 mmus_s = gorth(cc.genes.updated.2019$s.genes, source_organism = "hsapiens", target_organism = "mmusculus")$ortholog_name
 mmus_g2m = gorth(cc.genes.updated.2019$g2m.genes, source_organism = "hsapiens", target_organism = "mmusculus")$ortholog_name
+
 NPC_QC <-CellCycleScoring(NPC_QC, s.features = mmus_s, g2m.features = mmus_g2m)
-#print(NPC_QC@meta.data)
+print(NPC_QC@meta.data)
 rm(mmus_g2m, mmus_s)
 #now do clustering, resolution matters, default is 0.8 but play around with it to get best resolution
+
 NPC_QC <- FindNeighbors(NPC_QC, dims = 1:10)
 NPC_QC_R1 <- FindClusters(NPC_QC, resolution = 0.1)
 # NPC_QC_R8 <- FindClusters(NPC_QC, resolution = 0.8)
@@ -125,7 +127,7 @@ rm(NPC_QC_R1, NPC_QC_R10, NPC_QC_R5, NPC_QC_R8)
 # SCTransfrom might be beneficial bc it gices better signal to noise ratio. regression is performed with Mt5 and cell cylce Scores bc they introduce unwanted variation
 # Should I also regress for Sex and Stimulation? Sex variation is also unwanted at the moment
 ## regression mit vst.flavors= "v2" klappt nicht, wenn mit sec oder stim anwenden Fehler in `contrasts<-`(`*tmp*`, value = contr.funs[1 + isOF[nn]]) : Kontraste können nur auf Faktoren mit 2 oder mehr Stufen angewendet werden 
-DefaultAssay(NPC_QC) <-"decontXcounts"
+
 NPC_ALL_TRANSFORM <- SCTransform(NPC_QC,  vst.flavor= "v2",method = "glmGamPoi",  verbose = F) #vars.to.regress = c("percent.mt","S.Score","G2M.Score"),
 NPC_ALL_TRANSFORM <- RunPCA(NPC_ALL_TRANSFORM, verbose = F)
 NPC_ALL_TRANSFORM <- RunUMAP(NPC_ALL_TRANSFORM, dims = 1:30, verbose = F)
@@ -166,13 +168,12 @@ mouseRNA.ref <- celldex::MouseRNAseqData()
 mouseRNA.main <- SingleR(test = sce,assay.type.test = 1,ref = mouseRNA.ref,labels = mouseRNA.ref$label.main)
 mouseRNA.fine <- SingleR(test = sce,assay.type.test = 1,ref = mouseRNA.ref,labels = mouseRNA.ref$label.fine)
 
-
 table(mouseRNA.main$pruned.labels)
 table(mouseRNA.fine$pruned.labels)
 NPC_ALL_TRANSFORM@meta.data$mouseRNA.main <- mouseRNA.main$pruned.labels
 NPC_ALL_TRANSFORM@meta.data$mouseRNA.fine <- mouseRNA.fine$pruned.labels
-# rm(mouseRNA.fine, mouseRNA.main, mouseRNA.ref, sce)
-# #"MouseRNAseqData set fits better than MonacoImmuneData and ImmGenData set # So deleted code for these datasets.
+rm(mouseRNA.fine, mouseRNA.main, mouseRNA.ref, sce)
+#"MouseRNAseqData set fits better than MonacoImmuneData and ImmGenData set # So deleted code for these datasets.
 
 # #### Try to Use Scott "Spatial Protegenomics Macro niches as Ref data set for Annotations-------
 # expression_matrix_Scott <- ReadMtx(  feature.column = 1, "./99_other/rawData_mouseStSt/countTable_mouseStSt/matrix.mtx.gz", features = "./99_other/rawData_mouseStSt/countTable_mouseStSt/features.tsv.gz",

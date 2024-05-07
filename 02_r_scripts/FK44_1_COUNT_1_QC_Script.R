@@ -52,312 +52,79 @@ library(FastCAR)
 library(pheatmap)
 set.seed(42)
 # ###########################Load Data and Decontaminate with SoupX ##################
-#  #### Soup Decont for iAL87----
-# 
-#  sc = load10X('./00_raw_data/Liver_NPC_iAL87_transcriptome')
-#  sc = setClusters(sc, sc$metaData$clustersFine)
-#  ##Vizuals----
-# 
-#  dd = sc$metaData[colnames(sc$toc), ]
-#  mids = aggregate(cbind(tSNE1, tSNE2) ~ clustersFine, data = dd, FUN = mean)
-#  gg = ggplot(dd, aes(tSNE1, tSNE2))+
-#  geom_point(aes(colour = clustersFine), size = 0.2) +
-#  geom_label(data = mids, aes(label = clustersFine)) + ggtitle("NPC 87") +
-#  guides(colour = guide_legend(override.aes = list(size = 1)))
-# 
-#  png("./03_plots/QC_1_SoupX_87_ClustersFine.png")
-#  plot(gg)
-#  dev.off()
-# 
-#  dd$val = sc$toc["Saa1", ]
-#  gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-#  png("./03_plots/QC_1_SoupX_87_ClustersSAA1.png")
-#  plot(gg)
-#  dev.off()
-#  dd$val = sc$toc["Alb", ]
-#  gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-#  png("./03_plots/QC_1_SoupX_87_ClustersAlb.png")
-#  plot(gg)
-#  dev.off()
-#  png("./03_plots/QC_1_SoupX_87_ClustersAlb_SIG.png")
-#   gg = plotMarkerMap(sc, "Alb")
-#  dev.off()
-#  plot(gg)
-# 
-#  dd$val = sc$toc["Cd3e", ]
-# gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-# png("./03_plots/QC_1_SoupX_87_ClustersCD3e.png")
-#  plot(gg)
-# dev.off()
-# gg = plotMarkerMap(sc, "Cd3e")
-# png("./03_plots/QC_1_SoupX_87_ClustersCD3e_SIG.png")
-# plot(gg)
-# 
-# 
-#  dd$val = sc$toc["Cd19", ]
-#  gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-#  png("./03_plots/QC_1_SoupX_87_ClustersCD19.png")
-#   plot(gg)
-# dev.off()
-#  gg = plotMarkerMap(sc, "Cd19")
-#  png("./03_plots/QC_1_SoupX_87_ClustersCD19_SIG.png")
-#  plot(gg)
-#  dev.off()
-# 
-#  #### Stuff----
-# 
-# sc = autoEstCont(sc)
-# head(sc$soupProfile[order(sc$soupProfile$est, decreasing = TRUE), ], n = 20)
-# 
-#  out = adjustCounts(sc)
-#  png("./03_plots/QC_1_SoupX_87_ChangedSAA1.png")
-#  plotChangeMap(sc, out, "Saa1")
-#  dev.off()
-# 
-#  dd$Saa1 = sc$toc["Saa1", ]
-#  gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Saa1 > 0))
-#  png("./03_plots/QC_1_SoupX_87_CLUSTERSSAA AFTER.png")
-#  plot(gg)
-#  dev.off()
-# 
-#  gg = plotMarkerMap(sc, "Saa1")
-#  png("./03_plots/QC_1_SoupX_87_CLUSTERSSAA SIG AFTER.png")
-#  plot(gg)
-#  dev.off()
-#  NPC_87 = CreateSeuratObject(out)
-# 
-# 
-#  #### Soup Decont for iAL88----
-# 
-#  sc = load10X('./00_raw_data/Liver_NPC_iAL88_transcriptome')
-#  sc = setClusters(sc, sc$metaData$clustersFine)
-#  ##Vizuals----
-# 
-#  dd = sc$metaData[colnames(sc$toc), ]
-#  mids = aggregate(cbind(tSNE1, tSNE2) ~ clustersFine, data = dd, FUN = mean)
-#  gg = ggplot(dd, aes(tSNE1, tSNE2))+
-#    geom_point(aes(colour = clustersFine), size = 0.2) +
-#    geom_label(data = mids, aes(label = clustersFine)) + ggtitle("NPC 88") +
-#    guides(colour = guide_legend(override.aes = list(size = 1)))
-# 
-#  png("./03_plots/QC_1_SoupX_88_ClustersFine.png")
-#  plot(gg)
-#  dev.off()
-# 
-#  dd$val = sc$toc["Saa1", ]
-#  gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-#  png("./03_plots/QC_1_SoupX_88_ClustersSAA1.png")
-#  plot(gg)
-#  dev.off()
-#  dd$val = sc$toc["Alb", ]
-#  gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-#  png("./03_plots/QC_1_SoupX_88_ClustersAlb.png")
-#  plot(gg)
-#  dev.off()
-#  gg = plotMarkerMap(sc, "Alb")
-#  png("./03_plots/QC_1_SoupX_88_ClustersAlb_SIG.png")
-#  plot(gg)
-#  dev.off()
-# 
-#  dd$val = sc$toc["Cd3e", ]
-#  gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-#  png("./03_plots/QC_1_SoupX_88_ClustersCD3e.png")
-#  plot(gg)
-#  dev.off()
-#  gg = plotMarkerMap(sc, "Cd3e")
-#  png("./03_plots/QC_1_SoupX_88_ClustersCD3e_SIG.png")
-#  plot(gg)
-#  dev.off()
-# 
-#  dd$val = sc$toc["Cd19", ]
-#  gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-#  png("./03_plots/QC_1_SoupX_88_ClustersCD19.png")
-#  plot(gg)
-#  dev.off()
-#  gg = plotMarkerMap(sc, "Cd19")
-#  png("./03_plots/QC_1_SoupX_88_ClustersCD19_SIG.png")
-#  plot(gg)
-#  dev.off()
-# 
-#  #### Stuff----
-# 
-#  sc = autoEstCont(sc)
-#  head(sc$soupProfile[order(sc$soupProfile$est, decreasing = TRUE), ], n = 20)
-# 
-#  out = adjustCounts(sc)
-#  png("./03_plots/QC_1_SoupX_88_ChangedSAA1.png")
-#  plotChangeMap(sc, out, "Saa1")
-#  dev.off()
-# 
-#  dd$Saa1 = sc$toc["Saa1", ]
-#  gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Saa1 > 0))
-#  png("./03_plots/QC_1_SoupX_88_CLUSTERSSAA AFTER.png")
-#  plot(gg)
-#  dev.off()
-# 
-#  gg = plotMarkerMap(sc, "Saa1")
-#  png("./03_plots/QC_1_SoupX_88_CLUSTERSSAA SIG AFTER.png")
-#  plot(gg)
-#  dev.off()
-#  NPC_88 = CreateSeuratObject(out)
-# 
-# 
-#  #### Soup Decont for iAL91----
-# 
-#  sc = load10X('./00_raw_data/Liver_NPC_iAL91_transcriptome')
-#  sc = setClusters(sc, sc$metaData$clustersFine)
-#  ##Vizuals----
-# 
-#  dd = sc$metaData[colnames(sc$toc), ]
-#  mids = aggregate(cbind(tSNE1, tSNE2) ~ clustersFine, data = dd, FUN = mean)
-#  gg = ggplot(dd, aes(tSNE1, tSNE2))+
-#    geom_point(aes(colour = clustersFine), size = 0.2) +
-#    geom_label(data = mids, aes(label = clustersFine)) + ggtitle("NPC 91") +
-#    guides(colour = guide_legend(override.aes = list(size = 1)))
-# 
-#  png("./03_plots/QC_1_SoupX_91_ClustersFine.png")
-#  plot(gg)
-#  dev.off()
-# 
-#  dd$val = sc$toc["Saa1", ]
-#  gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-#  png("./03_plots/QC_1_SoupX_91_ClustersSAA1.png")
-#  plot(gg)
-#  dev.off()
-#  dd$val = sc$toc["Alb", ]
-#  gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-#  png("./03_plots/QC_1_SoupX_91_ClustersAlb.png")
-#  plot(gg)
-#  dev.off()
-#  gg = plotMarkerMap(sc, "Alb")
-#  png("./03_plots/QC_1_SoupX_91_ClustersAlb_SIG.png")
-# plot(gg)
-#   dev.off()
-#    dd$val = sc$toc["Cd3e", ]
-#  gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-#  png("./03_plots/QC_1_SoupX_91_ClustersCD3e.png")
-#  plot(gg)
-#  dev.off()
-#  gg = plotMarkerMap(sc, "Cd3e")
-#  png("./03_plots/QC_1_SoupX_91_ClustersCD3e_SIG.png")
-#  plot(gg)
-#  dev.off()
-# 
-#  dd$val = sc$toc["Cd19", ]
-#  gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-#  png("./03_plots/QC_1_SoupX_91_ClustersCD19.png")
-#  plot(gg)
-#  dev.off()
-#  gg = plotMarkerMap(sc, "Cd19")
-#  png("./03_plots/QC_1_SoupX_91_ClustersCD19_SIG.png")
-#  plot(gg)
-#  dev.off()
-# 
-#  #### Stuff----
-# 
-#  sc = autoEstCont(sc)
-#  head(sc$soupProfile[order(sc$soupProfile$est, decreasing = TRUE), ], n = 20)
-# 
-#  out = adjustCounts(sc)
-#  png("./03_plots/QC_1_SoupX_91_ChangedSAA1.png")
-#  plotChangeMap(sc, out, "Saa1")
-#  dev.off()
-# 
-#  dd$Saa1 = sc$toc["Saa1", ]
-#  gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Saa1 > 0))
-#  png("./03_plots/QC_1_SoupX_91_CLUSTERSSAA AFTER.png")
-#  plot(gg)
-#  dev.off()
-# 
-#  gg = plotMarkerMap(sc, "Saa1")
-#  png("./03_plots/QC_1_SoupX_91_CLUSTERSSAA SIG AFTER.png")
-#  plot(gg)
-#  dev.off()
-#  NPC_91 = CreateSeuratObject(out)
-# 
-# 
-#  #### Soup Decont for iAL92----
-# 
-#  sc = load10X('./00_raw_data/Liver_NPC_iAL92_transcriptome')
-#  sc = setClusters(sc, sc$metaData$clustersFine)
-#  ##Vizuals----
-# 
-#  dd = sc$metaData[colnames(sc$toc), ]
-#  mids = aggregate(cbind(tSNE1, tSNE2) ~ clustersFine, data = dd, FUN = mean)
-#  gg = ggplot(dd, aes(tSNE1, tSNE2))+
-#    geom_point(aes(colour = clustersFine), size = 0.2) +
-#    geom_label(data = mids, aes(label = clustersFine)) + ggtitle("NPC 92") +
-#    guides(colour = guide_legend(override.aes = list(size = 1)))
-# 
-#  png("./03_plots/QC_1_SoupX_92_ClustersFine.png")
-#  plot(gg)
-#  dev.off()
-# 
-#  dd$val = sc$toc["Saa1", ]
-#  gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-#  png("./03_plots/QC_1_SoupX_92_ClustersSAA1.png")
-#  plot(gg)
-#  dev.off()
-#  dd$val = sc$toc["Alb", ]
-#  gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-#  png("./03_plots/QC_1_SoupX_92_ClustersAlb.png")
-#  plot(gg)
-#  dev.off()
-#  gg = plotMarkerMap(sc, "Alb")
-#  png("./03_plots/QC_1_SoupX_92_ClustersAlb_SIG.png")
-#  plot(gg)
-#  dev.off()
-#  dd$val = sc$toc["Cd3e", ]
-#  gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-#  png("./03_plots/QC_1_SoupX_92_ClustersCD3e.png")
-#  plot(gg)
-#  dev.off()
-#  gg = plotMarkerMap(sc, "Cd3e")
-#  png("./03_plots/QC_1_SoupX_92_ClustersCD3e_SIG.png")
-#  plot(gg)
-#  dev.off()
-# 
-#  dd$val = sc$toc["Cd19", ]
-#  gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
-#  png("./03_plots/QC_1_SoupX_92_ClustersCD19.png")
-#  plot(gg)
-#  dev.off()
-#  gg = plotMarkerMap(sc, "Cd19")
-#  png("./03_plots/QC_1_SoupX_92_ClustersCD19_SIG.png")
-#  plot(gg)
-#  dev.off()
-# 
-#  #### Stuff----
-# 
-#  sc = autoEstCont(sc)
-#  head(sc$soupProfile[order(sc$soupProfile$est, decreasing = TRUE), ], n = 20)
-# 
-#  out = adjustCounts(sc)
-#  png("./03_plots/QC_1_SoupX_92_ChangedSAA1.png")
-#  plotChangeMap(sc, out, "Saa1")
-#  dev.off()
-# 
-#  dd$Saa1 = sc$toc["Saa1", ]
-#  gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = Saa1 > 0))
-#  png("./03_plots/QC_1_SoupX_92_CLUSTERSSAA AFTER.png")
-#  plot(gg)
-#  dev.off()
-# 
-#  gg = plotMarkerMap(sc, "Saa1")
-#  png("./03_plots/QC_1_SoupX_92_CLUSTERSSAA SIG AFTER.png")
-#  plot(gg)
-#  dev.off()
-#  NPC_92 = CreateSeuratObject(out)
-# 
+#  #### Soup Decont ----
+animals <-c("87","88","91","92")
+Hep_genes <-c("Saa1", "Saa2","Alb")
+T_genes <-c("Cd3e","Cd3d", "Cd4", "Cd8a") 
+B_genes <-c("Cd19")
+Gene_List <-list(Hep_genes,T_genes,B_genes)
+for (i in animals){
+  sc = load10X(paste0("./00_raw_data/Liver_NPC_iAL",i,"_transcriptome"))
+  sc = setClusters(sc, sc$metaData$clustersFine)
+  Soup <-sc$soupProfile[order(sc$soupProfile$est, decreasing = TRUE), ]
+  write.csv(Soup,paste0("./99_other/0_Decont_SoupX_Soup_Genes_iAL",i,".csv"))
+  Soup_Genes <-head(rownames(Soup), n=10)
+  #  sc = autoEstCont(sc)
+  useToEst = estimateNonExpressingCells(sc, nonExpressedGeneList = list(IG = Hep_genes,T_genes,B_genes))
+  sc = calculateContaminationFraction(sc, list(IG = Hep_genes,T_genes,B_genes), useToEst = useToEst,forceAccept=TRUE)
+  out = adjustCounts(sc)
+  srat<-CreateSeuratObject(out)
+  saveRDS(srat, paste0("./01_tidy_data/iAL",i,"_SoupX.rds"))
+  rm(srat)
+  ##Vizuals----
+  dd = sc$metaData[colnames(sc$toc), ]
+  mids = aggregate(cbind(tSNE1, tSNE2) ~ clustersFine, data = dd, FUN = mean)
+  gg = ggplot(dd, aes(tSNE1, tSNE2))+
+    geom_point(aes(colour = clustersFine), size = 0.2) +
+    geom_label(data = mids, aes(label = clustersFine)) + ggtitle("NPC 87") +
+    guides(colour = guide_legend(override.aes = list(size = 1)))
+  png(paste0("./03_plots/QC_0_SoupX_",i,"_ClustersFine.png"))
+  print(plot(gg))
+  dev.off()
+  for (GL in Gene_List){     
+    for (g in GL){
+      dd$val = sc$toc[g, ]
+      gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
+      png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_Clusters_",g,".png"))
+      print(plot(gg))
+      dev.off()
+      gg = plotMarkerMap(sc, g)
+      png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_Clusters_",g,"_SIG.png"))
+      print(plot(gg))
+      dev.off()
+      gg <-plotChangeMap(sc, out, g)
+      png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_Clusters_",g,"_CHANGE.png"))
+      print(gg)
+      dev.off()
+    }
+  }
+  for (g in Soup_Genes){
+    dd$val = sc$toc[g, ]
+    gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
+    png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_Clusters_",g,".png"))
+    print(plot(gg))
+    dev.off()
+    gg = plotMarkerMap(sc, g)
+    png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_Clusters_",g,"_SIG.png"))
+    print(plot(gg))
+    dev.off()
+    gg <-plotChangeMap(sc, out, g)
+    png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_Clusters_",g,"_CHANGE.png"))
+    print(gg)
+    dev.off()
+  }
+}
 
+
+ 
 ########################## Kategorien Stimlulation und Sex hinzufügen, evtl noch age? ####################
-numbers = c("002", "150", "250", "350", "450", "550")
+animals <-c("_")#"87","88","91","92")
 
-for ( i in numbers){
-NPC_87 <- readRDS(paste0("./01_tidy_data/iAL87_FastCar_",i,".rds"))
-NPC_88 <- readRDS(paste0("./01_tidy_data/iAL88_FastCar_",i,".rds")) 
-NPC_91 <- readRDS(paste0("./01_tidy_data/iAL91_FastCar_",i,".rds")) 
-NPC_82 <- readRDS(paste0("./01_tidy_data/iAL92_FastCar_",i,".rds")) 
+NPC_87 <-readRDS(paste0("./01_tidy_data/iAL87_SoupX.rds")) 
+NPC_88 <- readRDS(paste0("./01_tidy_data/iAL88_SoupX.rds")) 
+NPC_91 <- readRDS(paste0("./01_tidy_data/iAL91_SoupX.rds")) 
+NPC_92 <- readRDS(paste0("./01_tidy_data/iAL92_SoupX.rds")) 
+NPC_87$stim <- "TAM"
 NPC_88$stim <- "EtOH"
 NPC_91$stim <- "TAM"
 NPC_92$stim <- "EtOH"
@@ -369,13 +136,12 @@ NPC_87$sample <- "iAL87"
 NPC_88$sample <- "iAL88"
 NPC_91$sample <- "iAL91"
 NPC_92$sample <- "iAL92"
-NPC_88$sample <- "iAL88"
-NPC_91$sample <- "iAL91"
-NPC_92$sample <- "iAL92"
+
 ############################### After Applying ambient RNA Decontamination Set Up Standard QC ##################################
 #Setting things up for quality control mitochondrial genes, ribosomal content, doublets----
 NPC_87[["percent.mt"]] <- PercentageFeatureSet(NPC_87, pattern = "^mt-") 
 NPC_87[["percent.rb"]] <- PercentageFeatureSet(NPC_87, pattern = "Rp[sl]")
+
 NPC_88[["percent.mt"]] <- PercentageFeatureSet(NPC_88, pattern = "^mt-") 
 NPC_88[["percent.rb"]] <- PercentageFeatureSet(NPC_88, pattern = "Rp[sl]")
 NPC_91[["percent.mt"]] <- PercentageFeatureSet(NPC_91, pattern = "^mt-") 
@@ -432,7 +198,8 @@ table(NPC_92[['QC6']])
 #######################  Generate the Object "metadata" to plot Things more easily ############################################################################################
 #https://hbctraining.github.io/scRNA-seq/lessons/04_SC_quality_control.html
 
-
+NPC_87@meta.data
+NPC_88@meta.data
 metadata <- rbind(NPC_87@meta.data,NPC_88@meta.data, NPC_91@meta.data, NPC_92@meta.data)
 metadata$log10GenesPerUMI <- log10(metadata$nFeature_RNA) / log10(metadata$nCount_RNA)
 
@@ -441,6 +208,7 @@ metadata <- metadata %>%  dplyr::rename(nUMI = nCount_RNA,nGene = nFeature_RNA)
 metadata_QC6 <-subset(metadata, QC6 == "Pass")
 ########################### Visualizations of the QC Parameters on Data wo QC  #############################################################################
 # Visualize number of cell per sample----
+for (i in animals){
 png(paste0("./03_plots/QC_noQC_Cells_per_sample_bar",i,".png"))
 x <-metadata %>% 
   ggplot(aes(x=sample, fill=sample)) + 
@@ -496,7 +264,7 @@ print(x)
 dev.off()
 
 # Visualize number of Log10(Genes) per sample BoxPlot----
-png(paste0(("./03_plots/QC_noQC_Gene(log10)_per_sample_box",i,".png"))  
+png(paste0("./03_plots/QC_noQC_Gene(log10)_per_sample_box",i,".png"))  
 x <- metadata %>% 
   ggplot(aes(x=sample, y=log10(nGene), fill=sample)) + 
   geom_boxplot() + 
@@ -510,7 +278,7 @@ print(x)
 dev.off()
 
 # Visualize number of Log10(Genes) per sample DensityPlot----
-png(paste0(("./03_plots/QC_noQC_Gene(log10)_per_sample_density",i,".png"))  
+png(paste0("./03_plots/QC_noQC_Gene(log10)_per_sample_density",i,".png"))  
 x <- metadata %>% 
   ggplot(aes(color=sample, x=log10(nGene), fill= sample)) + 
   geom_density(alpha = 0.2) + 
@@ -523,7 +291,7 @@ print(x)
 dev.off()
 
 # Visualize number of Genes per sample ViolinPlot----
-png(paste0(("./03_plots/QC_noQC_Gene_per_sample_violin",i,".png"))  
+png(paste0("./03_plots/QC_noQC_Gene_per_sample_violin",i,".png"))  
 x <- metadata %>% 
   ggplot(aes(x=sample, fill=sample, y =nGene)) + 
   geom_point(position = position_jitter(seed = 1, width = 0.2), alpha = 0.1) +
@@ -538,7 +306,7 @@ print(x)
 dev.off()
 
 # Visualize number of Genes per sample BoxPlot----
-png(paste0(("./03_plots/QC_noQC_Gene_per_sample_box",i,".png"))  
+png(paste0("./03_plots/QC_noQC_Gene_per_sample_box",i,".png"))  
 x <- metadata %>% 
   ggplot(aes(x=sample, y=nGene, fill=sample)) + 
   geom_boxplot() + 
@@ -552,7 +320,7 @@ print(x)
 dev.off()
 
 # Visualize number of Genes per sample DensityPlot----
-png(paste0(("./03_plots/QC_noQC_Gene_per_sample_density",i,".png"))  
+png(paste0("./03_plots/QC_noQC_Gene_per_sample_density",i,".png"))  
 x <- metadata %>% 
   ggplot(aes(color=sample, x=nGene, fill= sample)) + 
   geom_density(alpha = 0.2) + 
@@ -565,7 +333,7 @@ dev.off()
 
 
 # Visualize number of percent.met per sample Violin plot----
-png(paste0(("./03_plots/QC_noQC_Mito_per_sample_violin",i,".png"))  
+png(paste0("./03_plots/QC_noQC_Mito_per_sample_violin",i,".png"))  
 x <- metadata %>% 
   ggplot(aes(x=sample, fill=sample, y =percent.mt)) + 
   geom_point(position = position_jitter(seed = 1, width = 0.2), alpha = 0.1) +
@@ -579,7 +347,7 @@ print(x)
 dev.off()
 
 # Visualize number of percent.mt per sample Density plot----
-png(paste0(("./03_plots/QC_noQC_Mito_per_sample_density",i,".png"))  
+png(paste0("./03_plots/QC_noQC_Mito_per_sample_density",i,".png"))  
 x <- metadata %>% 
   ggplot(aes(color=sample, x=percent.mt, fill=sample)) + 
   geom_density(alpha = 0.2) + 
@@ -590,7 +358,7 @@ print(x)
 dev.off()
 
 # Visualize number of percent.rb per sample Violin plot----
-png(paste0(("./03_plots/QC_noQC_Rb_per_sample_violin",i,".png"))  
+png(paste0("./03_plots/QC_noQC_Rb_per_sample_violin",i,".png"))  
 x <- metadata %>% 
   ggplot(aes(x=sample, fill=sample, y =percent.rb)) + 
   geom_point(position = position_jitter(seed = 1, width = 0.2), alpha = 0.1) +
@@ -603,7 +371,7 @@ print(x)
 dev.off()
 
 # Visualize number of Complexity of cells/sample as nGene vs nUMI----
-png(paste0(("./03_plots/QC_noQC_Gene_vs_UMI_persample",i,".png"))  
+png(paste0("./03_plots/QC_noQC_Gene_vs_UMI_persample",i,".png"))  
 x <- metadata%>% 
   ggplot(aes(x=nUMI, y=nGene, color=percent.mt)) + 
   geom_point() + 
@@ -621,7 +389,7 @@ print(x)
 dev.off()
 
 # Visualize number of Complexity of cells/sample as log10Genes/UMI----
-png(paste0(("./03_plots/QC_noQC_Gene perUMI_density",i,".png"))  
+png(paste0("./03_plots/QC_noQC_Gene perUMI_density",i,".png"))  
 x <- metadata %>%
   ggplot(aes(x=log10GenesPerUMI, color = sample, fill=sample)) +
   geom_density(alpha = 0.2) +
@@ -634,7 +402,7 @@ dev.off()
 # ########################### Visualizations of the QC Parameters on Data with QC6############################################################################
 
 # Visualize number of cell per sample----
-png(paste0(("./03_plots/QC_QC6_Cells_per_sample_bar",i,".png"))  
+png(paste0("./03_plots/QC_QC6_Cells_per_sample_bar",i,".png"))  
 x <- metadata_QC6 %>%
   ggplot(aes(x=sample, fill=sample)) +
   geom_bar() +
@@ -646,7 +414,7 @@ print(x)
 dev.off()
 
 # Visualize number of UMIS per sample violin----
-png(paste0(("./03_plots/QC_QC6_UMIs_per_sample_violin",i,".png")) 
+png(paste0("./03_plots/QC_QC6_UMIs_per_sample_violin",i,".png")) 
 x <- metadata_QC6 %>%
   ggplot(aes(x=sample, fill=sample, y =nUMI)) +
   geom_point(position = position_jitter(seed = 1, width = 0.2), alpha = 0.1) +
@@ -661,7 +429,7 @@ print(x)
 dev.off()
 
 # Visualize number of UMIS per sample density plot----
-png(paste0(("./03_plots/QC_QC6_UMIs_per_sample_density",i,".png")) 
+png(paste0("./03_plots/QC_QC6_UMIs_per_sample_density",i,".png")) 
 x <- metadata_QC6%>%
   ggplot(aes(color=sample, x=nUMI, fill= sample)) +
   geom_density(alpha = 0.2) +
@@ -674,7 +442,7 @@ print(x)
 dev.off()
 
 # Visualize number of Log10(Genes) per sample violin----
-png(paste0(("./03_plots/QC_QC6_Gene(log10)_per_sample_violin",i,".png")) 
+png(paste0("./03_plots/QC_QC6_Gene(log10)_per_sample_violin",i,".png")) 
 x <- metadata_QC6 %>%
   ggplot(aes(x=sample, fill=sample, y =log10(nGene))) +
   geom_point(position = position_jitter(seed = 1, width = 0.2), alpha = 0.1) +
@@ -689,7 +457,7 @@ print(x)
 dev.off()
 
 # Visualize number of Log10(Genes) per sample BoxPlot----
-png(paste0(("./03_plots/QC_QC6_Gene(log10)_per_sample_box",i,".png")) 
+png(paste0("./03_plots/QC_QC6_Gene(log10)_per_sample_box",i,".png")) 
 x <- metadata_QC6 %>%
   ggplot(aes(x=sample, y=log10(nGene), fill=sample)) +
   geom_boxplot() +
@@ -703,7 +471,7 @@ print(x)
 dev.off()
 
 # Visualize number of Log10(Genes) per sample DensityPlot----
-png(paste0(("./03_plots/QC_QC6_Gene(log10)_per_sample_density",i,".png")) 
+png(paste0("./03_plots/QC_QC6_Gene(log10)_per_sample_density",i,".png")) 
 x <- metadata_QC6 %>%
   ggplot(aes(color=sample, x=log10(nGene), fill= sample)) +
   geom_density(alpha = 0.2) +
@@ -717,7 +485,7 @@ dev.off()
 
 
 # Visualize number of Genes per sample ViolinPlot----
-png(paste0(("./03_plots/QC_QC6_Gene_per_sample_violin",i,".png")) 
+png(paste0("./03_plots/QC_QC6_Gene_per_sample_violin",i,".png")) 
 x <- metadata_QC6 %>%
   ggplot(aes(x=sample, fill=sample, y =nGene)) +
   geom_point(position = position_jitter(seed = 1, width = 0.2), alpha = 0.1) +
@@ -732,7 +500,7 @@ print(x)
 dev.off()
 
 # Visualize number of Genes per sample BoxPlot----
-png(paste0(("./03_plots/QC_QC6_Gene_per_sample_box",i,".png")) 
+png(paste0("./03_plots/QC_QC6_Gene_per_sample_box",i,".png")) 
 x <- metadata_QC6 %>%
   ggplot(aes(x=sample, y=nGene, fill=sample)) +
   geom_boxplot() +
@@ -746,7 +514,7 @@ print(x)
 dev.off()
 
 # Visualize number of Genes per sample DensityPlot----
-png(paste0(("./03_plots/QC_QC6_Gene_per_sample_density",i,".png")) 
+png(paste0("./03_plots/QC_QC6_Gene_per_sample_density",i,".png")) 
 x <- metadata_QC6 %>%
   ggplot(aes(color=sample, x=nGene, fill= sample)) +
   geom_density(alpha = 0.2) +
@@ -759,7 +527,7 @@ dev.off()
 
 
 # Visualize number of percent.met per sample Violin plot----
-png(paste0(("./03_plots/QC_QC6_Mito_per_sample_violin",i,".png")) 
+png(paste0("./03_plots/QC_QC6_Mito_per_sample_violin",i,".png")) 
 x <- metadata_QC6 %>%
   ggplot(aes(x=sample, fill=sample, y =percent.mt)) +
   geom_point(position = position_jitter(seed = 1, width = 0.2), alpha = 0.1) +
@@ -773,7 +541,7 @@ print(x)
 dev.off()
 
 # Visualize number of percent.mt per sample Density plot----
-png(paste0(("./03_plots/QC_QC6_Mito_per_sample_density",i,".png")) 
+png(paste0("./03_plots/QC_QC6_Mito_per_sample_density",i,".png")) 
 x <- metadata_QC6 %>%
   ggplot(aes(color=sample, x=percent.mt, fill=sample)) +
   geom_density(alpha = 0.2) +
@@ -784,7 +552,7 @@ print(x)
 dev.off()
 
 # Visualize number of percent.rb per sample Violin plot----
-png(paste0(("./03_plots/QC_QC6_Rb_per_sample_violin",i,".png")) 
+png(paste0("./03_plots/QC_QC6_Rb_per_sample_violin",i,".png")) 
 x <- metadata_QC6 %>%
   ggplot(aes(x=sample, fill=sample, y =percent.rb)) +
   geom_point(position = position_jitter(seed = 1, width = 0.2), alpha = 0.1) +
@@ -797,7 +565,7 @@ print(x)
 dev.off()
 
 # Visualize number of Complexity of cells/sample as nGene vs nUMI----
-png(paste0(("./03_plots/QC_QC6_Gene_vs_UMI_persample",i,".png")) 
+png(paste0("./03_plots/QC_QC6_Gene_vs_UMI_persample",i,".png")) 
 x <- metadata_QC6%>%
   ggplot(aes(x=nUMI, y=nGene, color=percent.mt)) +
   geom_point() +
@@ -815,7 +583,7 @@ print(x)
 dev.off()
 
 # Visualize number of Complexity of cells/sample as log10Genes/UMI----
-png(paste0(("./03_plots/QC_QC6_Gene perUMI_density",i,".png")) 
+png(paste0("./03_plots/QC_QC6_Gene perUMI_density",i,".png")) 
 x <- metadata_QC6 %>%
   ggplot(aes(x=log10GenesPerUMI, color = sample, fill=sample)) +
   geom_density(alpha = 0.2) +
@@ -823,16 +591,7 @@ x <- metadata_QC6 %>%
   geom_vline(xintercept = 0.8)
 print(x)
 dev.off()
-
-#################### Normalize Data and Find Variable Features Data wo QC ############################################################
-NPC_87 <- NormalizeData(NPC_87)
-NPC_87 <- FindVariableFeatures(NPC_87, selection.method = "vst", nfeatures = 2000)
-NPC_88 <- NormalizeData(NPC_88)
-NPC_88 <- FindVariableFeatures(NPC_88, selection.method = "vst", nfeatures = 2000)
-NPC_91 <- NormalizeData(NPC_91)
-NPC_91 <- FindVariableFeatures(NPC_91, selection.method = "vst", nfeatures = 2000)
-NPC_92 <- NormalizeData(NPC_92)
-NPC_92 <- FindVariableFeatures(NPC_92, selection.method = "vst", nfeatures = 2000)
+}
 
 #################### Normalize Data and Find Variable Features Data with QC6 ############################################################
 
@@ -847,29 +606,28 @@ NPC_92_QC6 <- NormalizeData(subset(NPC_92, subset = QC6 == 'Pass'))
 NPC_92_QC6 <- FindVariableFeatures(NPC_92_QC6, selection.method = "vst", nfeatures = 2000)
 #Remove unused data from memory to save ram
 rm(NPC_87.data,NPC_88.data, NPC_91.data, NPC_92.data, metadata_QC5, metadata_QC6, metadata)
-saveRDS(NPC_87_QC6, paste0("./01_tidy_data/QC_1_QC6_NPC_87",i,".rds"))
-saveRDS(NPC_88_QC6, paste0("./01_tidy_data/QC_1_QC6_NPC_88",i,".rds"))
-saveRDS(NPC_91_QC6, paste0("./01_tidy_data/QC_1_QC6_NPC_91",i,".rds"))
-saveRDS(NPC_92_QC6, paste0("./01_tidy_data/QC_1_QC6_NPC_92",i,".rds"))
-rm(NPC_87_QC6,NPC_88_QC6,NPC_88_QC6,NPC_91_QC6,NPC_92_QC6)
+saveRDS(NPC_87_QC6, paste0("./01_tidy_data/QC_1_QC6_NPC_87.rds"))
+saveRDS(NPC_88_QC6, paste0("./01_tidy_data/QC_1_QC6_NPC_88.rds"))
+saveRDS(NPC_91_QC6, paste0("./01_tidy_data/QC_1_QC6_NPC_91.rds"))
+saveRDS(NPC_92_QC6, paste0("./01_tidy_data/QC_1_QC6_NPC_92.rds"))
+
 #### for loop ends ####
-}
+
 
 ########################## Define Anchors for Integration and Integrate Different Data Sets ####
-## fill in correct FastCar CutOFF!
-#NPC_87 <-readRDS("./01_tidy_data/QC_1_QC6_NPC_87",i".rds"))
-#NPC_88 <-readRDS("./01_tidy_data/QC_1_QC6_NPC_88",i".rds"))
-#NPC_91 <-readRDS("./01_tidy_data/QC_1_QC6_NPC_91",i".rds"))
-#NPC_92 <-readRDS("./01_tidy_data/QC_1_QC6_NPC_92",i".rds"))
+
+NPC_87 <-readRDS("./01_tidy_data/QC_1_QC6_NPC_87.rds")
+NPC_88 <-readRDS("./01_tidy_data/QC_1_QC6_NPC_88.rds")
+NPC_91 <-readRDS("./01_tidy_data/QC_1_QC6_NPC_91.rds")
+NPC_92 <-readRDS("./01_tidy_data/QC_1_QC6_NPC_92.rds")
 NPC.anchors <- FindIntegrationAnchors(object.list = list(NPC_87, NPC_88, NPC_91, NPC_92), dims = 1:20)
 NPC.combined<- IntegrateData(anchorset = NPC.anchors, dims = 1:20)
-NPC_QC6.anchors <- FindIntegrationAnchors(object.list = list(NPC_87_QC6, NPC_88_QC6, NPC_91_QC6, NPC_92_QC6), dims = 1:20)
-NPC_QC6.combined<- IntegrateData(anchorset = NPC_QC6.anchors, dims = 1:20)
+rm(NPC_87_QC6,NPC_88_QC6,NPC_88_QC6,NPC_91_QC6,NPC_92_QC6)
 rm(NPC_87,NPC_88, NPC_91, NPC_92,NPC.anchors, NPC_QC5.anchors, NPC_QC6.anchors )
 ######################## Save Integrated Data Sets with QC (QC5 and QC6 and wo QC) #########
-saveRDS(NPC.combined, "./01_tidy_data/QC_noQC_NPC.combined")
-saveRDS(NPC_QC6.combined, "./01_tidy_data/QC_QC6_NPC_QC6.combined")
-rm(, NPC_87_QC6, NPC_87, NPC_88, , NPC_88_QC6, NPC_91, , NPC_91_QC6, NPC_92, , NPC_92_QC6 )
+saveRDS(NPC.combined, "./01_tidy_data/QC_QC6_NPC_QC6.combined")
+
+rm(NPC_87_QC6, NPC_87, NPC_88,NPC_88_QC6, NPC_91, NPC_91_QC6, NPC_92,NPC_92_QC6 )
 rm(NPC.combined,  NPC_QC6.combined)
 ########################################################################
 ########################################################################
