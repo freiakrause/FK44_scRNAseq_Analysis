@@ -51,8 +51,8 @@ set.seed(42)
 ################################# Load Input Data  ##################################################
 #Basic QC is done. QC5 and QC6 contain filtered data: UMI count, Gene Count, MT% and Complexity
 #We did SCTransformation with regression in MT percentage and CellCycleScore
-#runUMAP and FindeNeighbours was run with dim 1:30 each, findClusters was run with reoslution 0.3
-NPC_CLUSTER <- readRDS("./01_tidy_data/NPC_ALL_TRANSFORM.rds")
+#runUMAP and FindeNeighbours was run with dim 1:30 each, findClusters was run with resolution 0.3
+NPC_CLUSTER <- readRDS("./01_tidy_data/4_NPC_ALL_TRANSFORM.rds")
 ###################### Function Create_Vplots ####################################
 #Create multiple ViolinPlots with Seurat Object and vector of displayed features as input as save the plots as png
 Create_Vplots <- function(DataSet,feature_list){

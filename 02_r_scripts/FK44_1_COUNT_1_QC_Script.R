@@ -58,12 +58,12 @@ set.seed(42)
 
 # ###########################Load Data and Decontaminate with SoupX ##################
 #  #### Soup Decont ----
-animals <-c("87","88","91","92")
 Hep_genes <-c("Saa1", "Saa2","Alb","Tat")
 T_genes <-c("Cd3e","Cd3d", "Cd4", "Cd8a") 
 B_genes <-c("Cd19")
 M_genes <-c("Clec4f")
 Gene_List <-list(Hep_genes,T_genes,B_genes,M_genes)
+animals <-c("87","88","91","92")
 for (i in animals){  
   sc = load10X(paste0("./00_raw_data/Liver_NPC_iAL",i,"_transcriptome"))
   sc = setClusters(sc, sc$metaData$clustersFine)
@@ -607,31 +607,32 @@ dev.off()
 #################### Normalize Data and Find Variable Features Data with QC6 ############################################################
 
 #normalize data set to account for sequencing depth, default scale to 10 000 and log2-transform
-NPC_87 <-subset(NPC_87, subset = QC6 == 'Pass')
-NPC_88 <-subset(NPC_88, subset = QC6 == 'Pass')
-NPC_91 <-subset(NPC_91, subset = QC6 == 'Pass')
-NPC_92 <-subset(NPC_92, subset = QC6 == 'Pass')
-NPC_list<- list(NPC_87,NPC_88,NPC_91,NPC_92)
-for (i in 1:length(NPC_list)){
-  NPC_list[[i]] <- NormalizeData(NPC_list[[i]], verbose = F)
-  NPC_list[[i]] <- FindVariableFeatures(NPC_list[[i]], selection.method = "vst", nfeatures = 2000, verbose = F)
-  saveRDS(i, paste0("./01_tidy_data/1_QC_1_QC6_NPC_",i,".rds"))
-}
+NPC_87 <-subset(NPC_87, subset = QC6 == 'Pass')%>%
+      NormalizeData(verbose=F)%>%
+      FindVariableFeatures(selection.method = "vst", nfeatures = 2000, verbose = F)
+saveRDS(NPC_87, "./01_tidy_data/1_QC_1_QC6_NPC_87.rds")
+
+NPC_88 <-subset(NPC_88, subset = QC6 == 'Pass')%>%NormalizeData(verbose=F)%>%
+  FindVariableFeatures(selection.method = "vst", nfeatures = 2000, verbose = F)
+saveRDS(NPC_88, "./01_tidy_data/1_QC_1_QC6_NPC_88.rds")
+
+NPC_91 <-subset(NPC_91, subset = QC6 == 'Pass')%>%NormalizeData(verbose=F)%>%
+  FindVariableFeatures(selection.method = "vst", nfeatures = 2000, verbose = F)
+saveRDS(NPC_91, "./01_tidy_data/1_QC_1_QC6_NPC_91.rds")
+
+NPC_92 <-subset(NPC_92, subset = QC6 == 'Pass')%>%NormalizeData(verbose=F)%>%
+  FindVariableFeatures(selection.method = "vst", nfeatures = 2000, verbose = F)
+saveRDS(NPC_92, "./01_tidy_data/1_QC_1_QC6_NPC_92.rds")
+
 #Remove unused data from memory to save ram
 rm(NPC_87.data,NPC_88.data, NPC_91.data, NPC_92.data, metadata_QC5, metadata_QC6, metadata)
 
 ########################## Define Anchors for Integration and Integrate Different Data Sets ####
 
-#NPC_87 <-readRDS("./01_tidy_data/QC_1_QC6_NPC_87.rds")
-#NPC_88 <-readRDS("./01_tidy_data/QC_1_QC6_NPC_88.rds")
-#NPC_91 <-readRDS("./01_tidy_data/QC_1_QC6_NPC_91.rds")
-#NPC_92 <-readRDS("./01_tidy_data/QC_1_QC6_NPC_92.rds")
-NPC.anchors <- FindIntegrationAnchors(object.list = NPC_list, dims = 1:20)
-NPC.combined<- IntegrateData(anchorset = NPC.anchors, dims = 1:20)
-rm(NPC_87,NPC_88, NPC_91, NPC_92,NPC.anchors)
-######################## Save Integrated Data Sets with QC (QC5 and QC6 and wo QC) #########
-saveRDS(NPC.combined, "./01_tidy_data/2_QC_QC6_NPC_QC6.combined")
-rm(NPC.combined)
-########################################################################
-########################################################################
+#NPC_87 <-readRDS("./01_tidy_data/1_QC_1_QC6_NPC_87.rds")
+#NPC_88 <-readRDS("./01_tidy_data/1_QC_1_QC6_NPC_88.rds")
+#NPC_91 <-readRDS("./01_tidy_data/1_QC_1_QC6_NPC_91.rds")
+#NPC_92 <-readRDS("./01_tidy_data/1_QC_1_QC6_NPC_92.rds")
 
+########################################################################
+########################################################################
