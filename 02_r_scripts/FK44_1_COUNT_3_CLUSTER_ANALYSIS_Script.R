@@ -32,6 +32,7 @@
 #renv::install("svglite")
 #################### Libraries #########################
 library(Seurat)
+library(SeuratData)
 library(ggplot2)
 library(SingleR)
 library(dplyr)
@@ -52,7 +53,7 @@ set.seed(42)
 #Basic QC is done. QC5 and QC6 contain filtered data: UMI count, Gene Count, MT% and Complexity
 #We did SCTransformation with regression in MT percentage and CellCycleScore
 #runUMAP and FindeNeighbours was run with dim 1:30 each, findClusters was run with resolution 0.3
-NPC_CLUSTER <- readRDS("./01_tidy_data/4_NPC_ALL_TRANSFORM.rds")
+NPC_CLUSTER <- readRDS("./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
 ###################### Function Create_Vplots ####################################
 #Create multiple ViolinPlots with Seurat Object and vector of displayed features as input as save the plots as png
 Create_Vplots <- function(DataSet,feature_list){
@@ -86,56 +87,58 @@ NPC_CLUSTER<-SetIdent(NPC_CLUSTER,value = "mouseRNA.main")
 Create_Vplots(NPC_CLUSTER,features_TOP10)
 Create_Vplots(NPC_CLUSTER,features_FACS)
 Create_Vplots(NPC_CLUSTER,features_DEG_Scott)
+# https://divingintogeneticsandgenomics.com/post/how-to-make-a-multi-group-dotplot-for-single-cell-rnaseq-data/
+#https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2023.1223471/full#supplementary-material
+Idents(NPC_CLUSTER) <-NPC_CLUSTER$mouseRNA.main
+Idents(NPC_CLUSTER) <-factor(Idents(NPC_CLUSTER),
+  levels=c("T cells", "NK cells", "B cells", "Macrophages", "Monocytes", "Granulocytes", "Dendritic cells","Microglia", "Endothelial cells","Epithelial cells","Hepatocytes","Fibroblasts"))
+#non immune: MUC5A KRT5 SFTPD EPCAM CDH5 COL1A2 ACTA2 PECAM1 COL3A1 TMSB10 CALD1 FTH1 COL6A2 FKBP1A
+#immune PTPRC CD45 CSF3R FCGR3B KLRD1 FPR1 CD8A CD1B TNFRSF17 BANK1 FCRL2 PNOC CR2 FCN1 GNLY KIR2DL1 KIR3DL1 KIR3DL2 CD1E CD1A CD163 AIF1 CD79A JCHAIN
 
+markers.to.plot <-c("Ptprc","Cd52","Tyrobp","Cd1e",
+                    "Cd3d","Cd3e","Cd3g","Cd2","Cd7","Il7r","Ccr7","Cd4","Cd8a",
+                    "Skap1","Nkg7",
+                    "Cd19","Cd79a","Cd79b",
+                    "Cd14","Clec4f","Lyz1","Cd68","C1qa","Adgre1","C1qc","Ly6i","Adgb", "Cd36" , "Cadm1",
+                    "Cd86","Lyz2","Fcer1g","S100a9",
+                    "Ly6g","Dapp1",
+                   "Ptprb","Nrp1","Pecam1", "Spp1","Ddit4l",  "Krt19","Timp1",
+                   "Alb","Hpd","Fabp1","Apoa2","Saa1", "Saa2",
+                   "Col1a2","Rbms3","Dcn",
+                   "Mmrn2")
+DotPlot(NPC_CLUSTER, features = markers.to.plot, cols = c("blue", "red"), 
+        dot.scale = 8)+RotatedAxis()
 
-############################## Dimension Plot of Clusters ###########################################
-DimPlot(NPC_CLUSTER, split.by = "orig.ident")
-DimPlot(NPC_CLUSTER, split.by = "stim")
-DimPlot(NPC_CLUSTER, split.by = "sex")
-############################### Create Subsets by Cluster #########################################
-Cluster <-  unique(as.list(NPC_CLUSTER@meta.data$mouseRNA.main))
-for (c in Cluster){
-  x<-subset(NPC_CLUSTER, mouseRNA.main== c)
-  l<- length(x@meta.data$sex)
-  if  (l>10)
-    {
-    print(paste0("Cluster of ",c," has ",l," cells."))
-    p<-DimPlot(x, split.by = "stim")
-    print(p)
-    x <- SCTransform(x, verbose = F,vars.to.regress = c("S.Score","G2M.Score"))
-    x <- RunPCA(x, verbose = F)
-    x <- RunUMAP(x, dims = 1:30, verbose = F)
-    x <- FindNeighbors(x, dims = 1:30, verbose = F)
-    x <- FindClusters(x, verbose = F,resolution = 0.8, save.SNN = TRUE)
-    x <- SetIdent(x, value = "orig.ident")
-    DimPlot(x)
-    x <- SetIdent(x, value = "stim")
-    DimPlot(x)
-    x <- SetIdent(x, value = "sex")
-    DimPlot(x)
-    x <- SetIdent(x, value = "seurat_clusters")
-    DimPlot(x)
-    }
-    else{print(paste0("Cluster of ",x," is annoying and has less than 10 cells"))}
-}
-x<-subset(NPC_CLUSTER, mouseRNA.main== "Hepatocytes")
-l<- length(x@meta.data$sex)
-length(subset(NPC_CLUSTER, mouseRNA.main== "Hepatocytes")@meta.data$sex)
-length(subset(NPC_CLUSTER, mouseRNA.main== "Epithelial cells")@meta.data$sex)
-length(NPC_CLUSTER@meta.data$nFeature_RNA)
-length(NPC_CLUSTER@meta.data$sex)
-#########################################################################
-############# Try subclustering ###################
-
-
-all.markers <- FindAllMarkers(NPC_0, only.pos = T, min.pct = 0.5, logfc.threshold = 0.5)
-dim(all.markers)
-all.markers %>%  group_by(cluster) %>%  dplyr::filter(avg_log2FC > 0.5) %>%  slice_head(n = 10) %>%  ungroup() -> top10__MOUSEMAIN_CLUSTERMARKER
-
-
-###########################################################################
-
-
-
-######## Potentiall Interesting link for subclustering or DE ######################
-#####https://satijalab.org/seurat/articles/de_vignette
+# ############################### Create Subsets by Cluster #########################################
+# Cluster <-  unique(as.list(NPC_CLUSTER@meta.data$mouseRNA.main))
+# for (c in Cluster){
+#   x<-subset(NPC_CLUSTER, mouseRNA.main== c)
+#   l<- length(x@meta.data$sex)
+#   if  (l>10)
+#     {
+#     print(paste0("Cluster of ",c," has ",l," cells."))
+#     p<-DimPlot(x, split.by = "stim")
+#     print(p)
+#     x <- SCTransform(x, verbose = F,vars.to.regress = c("S.Score","G2M.Score"))
+#     x <- RunPCA(x, verbose = F)
+#     x <- RunUMAP(x, dims = 1:30, verbose = F)
+#     x <- FindNeighbors(x, dims = 1:30, verbose = F)
+#     x <- FindClusters(x, verbose = F,resolution = 0.8, save.SNN = TRUE)
+#     x <- SetIdent(x, value = "orig.ident")
+#     DimPlot(x)
+#     x <- SetIdent(x, value = "stim")
+#     DimPlot(x)
+#     x <- SetIdent(x, value = "sex")
+#     DimPlot(x)
+#     x <- SetIdent(x, value = "seurat_clusters")
+#     DimPlot(x)
+#     }
+#     else{print(paste0("Cluster of ",x," is annoying and has less than 10 cells"))}
+# }
+# x<-subset(NPC_CLUSTER, mouseRNA.main== "Hepatocytes")
+# l<- length(x@meta.data$sex)
+# length(subset(NPC_CLUSTER, mouseRNA.main== "Hepatocytes")@meta.data$sex)
+# length(subset(NPC_CLUSTER, mouseRNA.main== "Epithelial cells")@meta.data$sex)
+# length(NPC_CLUSTER@meta.data$nFeature_RNA)
+# length(NPC_CLUSTER@meta.data$sex)
+# #########################################################################
