@@ -171,9 +171,6 @@ sce <- as.SingleCellExperiment(DietSeurat(NPC_ALL_TRANSFORMED))
 mouseRNA.ref <- celldex::MouseRNAseqData()
 mouseRNA.main <- SingleR(test = sce,assay.type.test = 1,ref = mouseRNA.ref,labels = mouseRNA.ref$label.main)
 mouseRNA.fine <- SingleR(test = sce,assay.type.test = 1,ref = mouseRNA.ref,labels = mouseRNA.ref$label.fine)
-
-table(mouseRNA.main$pruned.labels)
-table(mouseRNA.fine$pruned.labels)
 NPC_ALL_TRANSFORMED@meta.data$mouseRNA.main <- mouseRNA.main$pruned.labels
 NPC_ALL_TRANSFORMED@meta.data$mouseRNA.fine <- mouseRNA.fine$pruned.labels
 rm(mouseRNA.fine, mouseRNA.main, mouseRNA.ref, sce)
@@ -193,7 +190,9 @@ for (c in a){
   x <-subset(NPC_ALL_TRANSFORMED, idents = c(paste0(c,"_EtOH"), paste0(c,"_TAM")))
   x <-FindMarkers(x, assay = "SCT", ident.2 = paste0(c,"_EtOH"), ident.1 = paste0(c,"_TAM"), verbose = FALSE, recorrect_umi = FALSE)
   write.csv(x,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_",c,".csv"))
-  p<-  EnhancedVolcano(x,lab = rownames(x), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val",FCcutoff = 1.5 ,title = paste0("DE ",c," TAM vs EtOH"), caption = 'FC cutoff, 1.5; p-value cutoff: p-val')
+  p<-  EnhancedVolcano(x,lab = rownames(x), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj", pCutoff = 1e-05, FCcutoff = 1.0 ,
+                       title = paste0("DE ",c," TAM vs EtOH"), 
+                       caption = 'FC cutoff, 1.0; p-value cutoff: p_val_adj<1e-05')
   png(paste0("./03_plots/3_DEG_Analysis_MainCluster/EnhancedVolcano_Main_ALL",c,".png"))
   print(p)
   dev.off()
@@ -214,9 +213,9 @@ for (c in a){
   write.csv(x,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_female",c,".csv"))
   p<-  EnhancedVolcano(x,lab = rownames(x), 
                        x = "avg_log2FC", y = "p_val", 
-                       pCutoffCol = "p_val" ,FCcutoff = 1.5, 
+                       pCutoffCol = "p_val_adj" ,FCcutoff = 1.0, pCutoff = 1e-05,
                        title = paste0("DE ",c," TAM vs EtOH only females"), 
-                       caption = 'FC cutoff: 1.5; p-value cutoff: p-val')
+                       caption = 'FC cutoff: 1.0; p-value cutoff: p-val adj <1e-05')
   png(paste0("./03_plots/3_DEG_Analysis_MainCluster/Volcano_Main_female",c,".png"))
   print(p)
   dev.off()
@@ -237,9 +236,9 @@ for (c in a){
   x <-FindMarkers(x, assay = "SCT", ident.2 = paste0(c,"_EtOH"), ident.1 = paste0(c,"_TAM"), verbose = FALSE, recorrect_umi = FALSE)
   write.csv(x,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_male",c,".csv"))
   p<-  EnhancedVolcano(x,lab = rownames(x), x = "avg_log2FC", y = "p_val",
-                       pCutoffCol = "p_val" ,FCcutoff = 1.5 ,
+                       pCutoffCol = "p_val_adj" ,FCcutoff = 1.0 ,pCutoff = 1e-05,
                        title = paste0("DE ",c," TAM vs EtOH only males"), 
-                       caption = 'FC cutoff: 1.5; p-value cutoff: p-val')
+                       caption = 'FC cutoff: 1.5; p-value cutoff: p-val adj<1e-05')
   png(paste0("./03_plots/3_DEG_Analysis_MainCluster/Volcano_Main_male",c,".png"))
   print(p)
   dev.off()
@@ -259,14 +258,15 @@ for (c in a){
   x <-subset(NPC_TAM, idents = c(paste0(c,"_female"), paste0(c,"_male")))
   x <-FindMarkers(x, assay = "SCT", ident.2 = paste0(c,"_female"), ident.1 = paste0(c,"_male"), verbose = FALSE, recorrect_umi = FALSE)
   write.csv(x,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_87vs91",c,".csv"))
-  p<-  EnhancedVolcano(x,lab = rownames(x), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val" ,FCcutoff = 1.5,title = paste0("DE ",c," 91 vs 87"), caption = 'FC cutoff, 1.5; p-value cutoff: p-val')
+  p<-  EnhancedVolcano(x,lab = rownames(x), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj" ,FCcutoff = 1.0,pCutoff = 1e-05,
+                       title = paste0("DE ",c," 91 vs 87"), caption = 'FC cutoff, 1.5; p-value cutoff: p-val_adj <1e-05')
   png(paste0("./03_plots/3_DEG_Analysis_MainCluster/Volcano_Main_87vs91",c,".png"))
   print(p)
   dev.off()
   print(paste0("I just saved Enhanced Volcano of ",c," for TAM samples."))
   
 }
-########################
+######################## Find Conserved Markers inClusters across Stimulation ########
 ConservedMarkers<-list()
 b<-unique(NPC_ALL_TRANSFORMED@meta.data$mouseRNA.main)
 b<-subset(b, subset=b!= "Adipocytes"&b!= "Epithelial cells")
@@ -280,27 +280,51 @@ for (c in b){
   print(paste0("I saved conserved Markers for ",b,"."))
 }
 
-#####################
+##################### Find TOP Markers that define Clusters ########
 all.markers <- FindAllMarkers(NPC_ALL_TRANSFORMED, only.pos = T, min.pct = 0.5, logfc.threshold = 0.5)
 dim(all.markers)
-all.markers %>%  group_by(cluster) %>%  dplyr::filter(avg_log2FC > 1) %>%  slice_head(n = 10) %>%  ungroup() -> top10_CLUSTERMARKER
 all.markers %>%  group_by(cluster) %>%  dplyr::filter(cluster == "Hepatocytes") %>%  slice_head(n = 100) %>%  ungroup() -> Hep_CLUSTERMARKER
-all.markers <- FindAllMarkers(NPC_ALL_TRANSFORMED, only.pos = T, min.pct = 0.5, logfc.threshold = 0.5)
 dim(all.markers)
 all.markers %>%  group_by(cluster) %>%  dplyr::filter(avg_log2FC > 1) %>%  slice_head(n = 10) %>%  ungroup() -> top10__MOUSEMAIN_CLUSTERMARKER
-write.csv(top10__MOUSEMAIN_CLUSTERMARKER, "./99_other/Clustering_3_top10_mouseMAIN_CLUSTERMARKER.csv", row.names=FALSE)
-write.csv(top10__MOUSEFINE_CLUSTERMARKER, "./99_other/Clustering_3_op10_mouseFINE_CLUSTERMARKER.csv", row.names=FALSE)
-all.markers <- FindAllMarkers(NPC_ALL_TRANSFORMED, only.pos = T, min.pct = 0.5, logfc.threshold = 0.5)
 dim(all.markers)
 all.markers %>%  group_by(cluster) %>%  dplyr::filter(avg_log2FC > 1) %>%  slice_head(n = 10) %>%  ungroup() -> top10__MOUSEFINE_CLUSTERMARKER
-all.markers %>%  group_by(cluster) %>%  dplyr::filter(cluster == "Hepatocytes") %>%  slice_head(n = 100) %>%  ungroup() -> Hep_CLUSTERMARKER
-NPC_ALL_TRANSFORMED <- SetIdent(NPC_ALL_TRANSFORMED, value = "mouseRNA.fine")
+dim(all.markers)
+
+write.csv(top10__MOUSEMAIN_CLUSTERMARKER, "./99_other/Clustering_3_top10_mouseMAIN_CLUSTERMARKER.csv", row.names=FALSE)
+write.csv(top10__MOUSEFINE_CLUSTERMARKER, "./99_other/Clustering_3_top10_mouseFINE_CLUSTERMARKER.csv", row.names=FALSE)
+
 saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
 NPC_ALL_TRANSFORMED <-readRDS(file = "./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
 
+################################# Load Input Data  ##################################################
+#### Load RDS with Cluster Markers found in SCT assay  #####
+NPC_CLUSTER <- readRDS("./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
+######################## Find Conserved Markers in Clusters across Stimulation on Integrated Assay ########
+ConservedMarkers<-list()
+b<-unique(NPC_CLUSTER@meta.data$mouseRNA.main)
+b<-subset(b, subset=b!= "Adipocytes"&b!= "Epithelial cells")
+Idents(NPC_CLUSTER) <- "mouseRNA.main"
+markers <- FindConservedMarkers(NPC_CLUSTER, assay = "integrated", ident.1 = "Hepatocytes", grouping.var = "stim",verbose = FALSE)
+for (c in b){
+  markers <- FindConservedMarkers(NPC_CLUSTER, assay = "integrated", ident.1 = b, grouping.var = "stim",verbose = FALSE)
+  write.csv(markers,paste0("./99_other/2_Clustering/ConservedMarkers_integrated_",c,".csv"))
+  ConservedMarkers<-append(ConservedMarkers,markers)
+  print(paste0("I saved conserved Markers for ",c,"."))
+}
+##################### Find TOP Markers that define Clusters onIntegrated Assay########
+all.markers <- FindAllMarkers(NPC_CLUSTER, only.pos = T, min.pct = 0.5, logfc.threshold = 0.5)
+all.markers %>%  group_by(cluster) %>%  dplyr::filter(cluster == "Hepatocytes") %>%  slice_head(n = 100) %>%  ungroup() -> Hep_CLUSTERMARKER
+all.markers %>%  group_by(cluster) %>%  dplyr::filter(avg_log2FC > 1) %>%  slice_head(n = 10) %>%  ungroup() -> top10__MOUSEMAIN_CLUSTERMARKER
+all.markers %>%  group_by(cluster) %>%  dplyr::filter(avg_log2FC > 1) %>%  slice_head(n = 10) %>%  ungroup() -> top10__MOUSEFINE_CLUSTERMARKER
+write.csv(top10__MOUSEMAIN_CLUSTERMARKER, "./99_other/Clustering_3_top10_mouseMAIN_CLUSTERMARKER_integrated.csv", row.names=FALSE)
+write.csv(top10__MOUSEFINE_CLUSTERMARKER, "./99_other/Clustering_3_top10_mouseFINE_CLUSTERMARKER_integrated.csv", row.names=FALSE)
+
+#### Save RDS with Cluster Markers found in Integrated Dataset #####
+saveRDS(NPC_CLUSTER, file = "./01_tidy_data/5_NPC_ALL_TRANSFORM_Markers_on_integrated.rds")
+
 ####################################################################################################################
 ##################### Plotting Things ####
-
+#NPC_ALL_TRANSFORMED <- SetIdent(NPC_ALL_TRANSFORMED, value = "mouseRNA.fine")
 Idents(NPC_ALL_TRANSFORMED) <-"mouseRNA.main"
 DefaultAssay(NPC_ALL_TRANSFORMED) <- "SCT"
 Hep_genes <-c("Saa1", "Saa2","Alb","mt-Cytb","mt-Co1", "2cdnaFLAG-LGP130", "1cdnaKANA","3cdnaZSGREEN","mt-Atp6")

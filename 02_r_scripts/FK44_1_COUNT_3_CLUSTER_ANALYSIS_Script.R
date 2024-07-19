@@ -16,6 +16,8 @@
 #renv::install("patchwork")
 #renv::install("igraph") # für das scheiß igraph (benötigt für seurat) nach tausend jahren troublehsooting gefunden: ich brauche: sudo apt install build-essential gfortran UND sudo apt install build-essential gfortran, dann gehts
 #renv::install("Seurat")
+renv::install("sccustomize")
+
 #renv::install("HGNChelper")
 #renv::install("openxlsx")
 #if (!require("BiocManager", quietly = TRUE))
@@ -30,9 +32,9 @@
 #remotes::install_github('immunogenomics/presto')
 #remotes::install_github('mojaveazure/ggseurat')
 #renv::install("svglite")
+#remotes::install_github('satijalab/seurat-data')
 #################### Libraries #########################
 library(Seurat)
-library(SeuratData)
 library(ggplot2)
 library(SingleR)
 library(dplyr)
@@ -47,24 +49,25 @@ library(patchwork)
 library(svglite)
 library(HGNChelper)
 library(openxlsx)
+
 set.seed(42)
 
-################################# Load Input Data  ##################################################
-#Basic QC is done. QC5 and QC6 contain filtered data: UMI count, Gene Count, MT% and Complexity
-#We did SCTransformation with regression in MT percentage and CellCycleScore
-#runUMAP and FindeNeighbours was run with dim 1:30 each, findClusters was run with resolution 0.3
-NPC_CLUSTER <- readRDS("./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
+
+#### Load Input Data #####
+NPC_CLUSTER <-readRDS(file = "./01_tidy_data/5_NPC_ALL_TRANSFORM_Markers_on_integrated.rds")
+Clustering_3_top10_mouseMAIN_CLUSTERMARKER<-read.csv("./99_other/Clustering_3_top10_mouseMAIN_CLUSTERMARKER_integrated.csv")
+
 ###################### Function Create_Vplots ####################################
 #Create multiple ViolinPlots with Seurat Object and vector of displayed features as input as save the plots as png
 Create_Vplots <- function(DataSet,feature_list){
   for (i in feature_list){
     print(i)
     a <- VlnPlot(DataSet, features = i)
-    #png(filename = paste0("./03_plots/Clustermarker_",i,".png"))
+    png(filename = paste0("./03_plots/2_Clustering/Clustermarker_",i,".png"))
     print(a)
-    #dev.off()
+    dev.off()
     
-    'svglite(filename = paste0("Clustermarker_",i,".svg"),
+    'svglite(filename = paste0("Clustermarker_integrated_",i,".svg"),
           width = 10,
           height = 10,
           bg="transparent",
@@ -76,38 +79,41 @@ Create_Vplots <- function(DataSet,feature_list){
 }
 ####### Create Violin Plots of all Clusters with shown potential marker genes ############
 #From my TOP10 Clustermarker table
-features_TOP10 <- c("Hpd","C1qc","Ptprb", "Cd79a","Skap1", "Ccl5", "Tyrobp", "Spp1","Dapp1","S100a9", "Dcn", "Adgb", "Rbms3", "Snca" , "Cadm1") 
+features_TOP10 <- unique(Clustering_3_top10_mouseMAIN_CLUSTERMARKER$gene)
 #From Internet/head/FACS
 features_FACS <- c("Alb","Clec4f", "Cd19","Cd3e", "Nkg7", "Cd14", "Lyz1","Lyz2","Timp1", "Col1a2", "Krt19", "Ly6g", "C1qa" , "Itgax", "Cd86") 
 #FROM Scott Paper DEGs in mouse cells
 features_DEG_Scott <-c("Mmrn2","Ntm","Fabp1","Apoa2","Ddit4l","Cd209a", "Nudt17","Ly6i")
 features_Cytokine <-c("Il6","Il10","Il1ß","Tnfa")
-
 NPC_CLUSTER<-SetIdent(NPC_CLUSTER,value = "mouseRNA.main")
+DefaultAssay(object = NPC_CLUSTER)<-"RNA"
 Create_Vplots(NPC_CLUSTER,features_TOP10)
 Create_Vplots(NPC_CLUSTER,features_FACS)
 Create_Vplots(NPC_CLUSTER,features_DEG_Scott)
+##### Bis hier alles seit dem neuen Integrieren durchgespielt. Nur DotPLot kram macht fehler 19.07.24
 # https://divingintogeneticsandgenomics.com/post/how-to-make-a-multi-group-dotplot-for-single-cell-rnaseq-data/
 #https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2023.1223471/full#supplementary-material
 Idents(NPC_CLUSTER) <-NPC_CLUSTER$mouseRNA.main
-Idents(NPC_CLUSTER) <-factor(Idents(NPC_CLUSTER),
-  levels=c("T cells", "NK cells", "B cells", "Macrophages", "Monocytes", "Granulocytes", "Dendritic cells","Microglia", "Endothelial cells","Epithelial cells","Hepatocytes","Fibroblasts"))
+NPC_CLUSTER <- subset(NPC_CLUSTER, mouseRNA.main %in% na.omit(NPC_CLUSTER$mouseRNA.main)) #removing cells which have a NA in mouseRNAmain, it gave error in DotPlot
+ Idents(NPC_CLUSTER) <-factor(Idents(NPC_CLUSTER),
+  levels=c("Hepatocytes","Macrophages","Endothelial cells","B cells","T cells", "NK cells",   "Monocytes", "Microglia","Granulocytes", "Fibroblasts","Erythrocytes","Dendritic cells", "Epithelial cells","Adipocytes"))
 #non immune: MUC5A KRT5 SFTPD EPCAM CDH5 COL1A2 ACTA2 PECAM1 COL3A1 TMSB10 CALD1 FTH1 COL6A2 FKBP1A
 #immune PTPRC CD45 CSF3R FCGR3B KLRD1 FPR1 CD8A CD1B TNFRSF17 BANK1 FCRL2 PNOC CR2 FCN1 GNLY KIR2DL1 KIR3DL1 KIR3DL2 CD1E CD1A CD163 AIF1 CD79A JCHAIN
-
-markers.to.plot <-c("Ptprc","Cd52","Tyrobp","Cd1e",
-                    "Cd3d","Cd3e","Cd3g","Cd2","Cd7","Il7r","Ccr7","Cd4","Cd8a",
-                    "Skap1","Nkg7",
-                    "Cd19","Cd79a","Cd79b",
-                    "Cd14","Clec4f","Lyz1","Cd68","C1qa","Adgre1","C1qc","Ly6i","Adgb", "Cd36" , "Cadm1",
-                    "Cd86","Lyz2","Fcer1g","S100a9",
-                    "Ly6g","Dapp1",
-                   "Ptprb","Nrp1","Pecam1", "Spp1","Ddit4l",  "Krt19","Timp1",
-                   "Alb","Hpd","Fabp1","Apoa2","Saa1", "Saa2",
+markers.to.plot <-c( "Alb","Hpd","Fabp1","Apoa2","Saa1", "Saa2",
+                     "Cd14","Clec4f","Lyz1","Cd68","C1qa","Adgre1","C1qc","Ly6i","Adgb", "Cd36" , "Cadm1",
+                     "Ptprb","Nrp1","Pecam1", 
+                     "Ptprc","Cd52","Tyrobp","Cd1e",
+                     "Cd19","Cd79a","Cd79b",
+                     "Cd3d","Cd3e","Cd3g","Cd2","Cd7","Il7r","Ccr7","Cd4","Cd8a",
+                     "Skap1","Nkg7",
+                     "Cd86","Lyz2","Fcer1g","S100a9",
+                     "Ly6g","Dapp1",
                    "Col1a2","Rbms3","Dcn",
+                   "Spp1","Ddit4l",  "Krt19","Timp1",
                    "Mmrn2")
-DotPlot(NPC_CLUSTER, features = markers.to.plot, cols = c("blue", "red"), 
-        dot.scale = 8)+RotatedAxis()
+DotPlot(NPC_CLUSTER, features = features_TOP10)+RotatedAxis()
+DotPlot(NPC_CLUSTER, features = markers.to.plot)+RotatedAxis()
+DoHeatmap(subset(NPC_CLUSTER, downsample = 100),features = features_TOP10, size = 3)
 
 # ############################### Create Subsets by Cluster #########################################
 # Cluster <-  unique(as.list(NPC_CLUSTER@meta.data$mouseRNA.main))

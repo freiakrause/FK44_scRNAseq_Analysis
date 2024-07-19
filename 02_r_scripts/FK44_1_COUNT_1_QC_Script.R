@@ -193,14 +193,23 @@ NPC_91[['QC6']] <- ifelse(log10(NPC_91@meta.data$nFeature_RNA) / log10(NPC_91@me
 table(NPC_91[['QC6']])
 
 NPC_92[['QC6']] <- ifelse(NPC_92@meta.data$nFeature_RNA > 6000,'Doublet','Pass')
-NPC_92[['QC6']] <- ifelse(NPC_92@meta.data$nFeature_RNA < 300 & NPC_92@meta.data$QC6 == 'Pass' , paste('Low_nFeature',NPC_92@meta.data$QC6,sep = ','),NPC_92@meta.data$QC6)
-NPC_92[['QC6']] <- ifelse(NPC_92@meta.data$nFeature_RNA < 300 & NPC_92@meta.data$QC6 != 'Pass' & NPC_92@meta.data$QC6 != 'Low_nFeature',paste('Low_nFeature',NPC_92@meta.data$QC6,sep = ','),NPC_92@meta.data$QC6)
+NPC_92[['QC6']] <- ifelse(NPC_92@meta.data$nFeature_RNA < 300 & NPC_92@meta.data$QC6 == 'Pass' , 
+                          paste('Low_nFeature',NPC_92@meta.data$QC6,sep = ','),NPC_92@meta.data$QC6)
+NPC_92[['QC6']] <- ifelse(NPC_92@meta.data$nFeature_RNA < 300 & NPC_92@meta.data$QC6 != 'Pass' & NPC_92@meta.data$QC6 != 'Low_nFeature',
+                          paste('Low_nFeature',NPC_92@meta.data$QC6,sep = ','),NPC_92@meta.data$QC6)
 NPC_92[['QC6']] <- ifelse(NPC_92@meta.data$percent.mt > 10 & NPC_92@meta.data$QC6 == 'Pass','High_MT',NPC_92@meta.data$QC6)
 NPC_92[['QC6']] <- ifelse(NPC_92@meta.data$nCount_RNA > 40000 & NPC_92@meta.data$QC6 == 'Pass','High_UMI',NPC_92@meta.data$QC6)
 NPC_92[['QC6']] <- ifelse(NPC_92@meta.data$nCount_RNA < 500 & NPC_92@meta.data$QC6 == 'Pass','Low_UMI',NPC_92@meta.data$QC6)
-NPC_92[['QC6']] <- ifelse(NPC_92@meta.data$nFeature_RNA < 300 & NPC_92@meta.data$QC6 != 'Pass'& NPC_92@meta.data$QC6 != 'High_MT',paste('High_MT',NPC_92@meta.data$QC6,sep = ','),NPC_92@meta.data$QC6)
-NPC_92[['QC6']] <- ifelse(log10(NPC_92@meta.data$nFeature_RNA) / log10(NPC_92@meta.data$nCount_RNA)>= 0.8 & NPC_92@meta.data$QC6 != 'Pass'& NPC_92@meta.data$QC6 != 'High_MT',paste('High_MT',NPC_92@meta.data$QC6,sep = ','),NPC_92@meta.data$QC6)
-NPC_92[['QC6']] <- ifelse(log10(NPC_92@meta.data$nFeature_RNA) / log10(NPC_92@meta.data$nCount_RNA)< 0.8 & NPC_92@meta.data$QC6 == 'Pass'& NPC_92@meta.data$QC6 != 'High_MT',paste('low complex',NPC_92@meta.data$QC6,sep = ','),NPC_92@meta.data$QC6)
+NPC_92[['QC6']] <- ifelse(NPC_92@meta.data$nFeature_RNA < 300 & NPC_92@meta.data$QC6 != 'Pass'& NPC_92@meta.data$QC6 != 'High_MT',
+                          paste('High_MT',NPC_92@meta.data$QC6,sep = ','),NPC_92@meta.data$QC6)
+NPC_92[['QC6']] <- ifelse(log10(NPC_92@meta.data$nFeature_RNA) / log10(NPC_92@meta.data$nCount_RNA)>= 0.8 &
+                            NPC_92@meta.data$QC6 != 'Pass'&
+                            NPC_92@meta.data$QC6 != 'High_MT',
+                          paste('High_MT',NPC_92@meta.data$QC6,sep = ','),NPC_92@meta.data$QC6)
+NPC_92[['QC6']] <- ifelse(log10(NPC_92@meta.data$nFeature_RNA) / log10(NPC_92@meta.data$nCount_RNA)< 0.8 &
+                            NPC_92@meta.data$QC6 == 'Pass'&
+                            NPC_92@meta.data$QC6 != 'High_MT',
+                          paste('low complex',NPC_92@meta.data$QC6,sep = ','),NPC_92@meta.data$QC6)
 table(NPC_92[['QC6']])
 
 #######################  Generate the Object "metadata" to plot Things more easily ############################################################################################
