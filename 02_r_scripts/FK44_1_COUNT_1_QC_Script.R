@@ -47,6 +47,8 @@ library(Matrix)
 library(gridExtra)
 library(qlcMatrix)
 library(pheatmap)
+source("02_r_scripts/malat1_function.R")
+
 set.seed(42)
 # output_dir <- file.path("./", "99_other/0_Decont_SoupX")
 # 

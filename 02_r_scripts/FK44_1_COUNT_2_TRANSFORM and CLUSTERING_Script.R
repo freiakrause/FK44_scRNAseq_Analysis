@@ -42,6 +42,7 @@ library(scrubletR)
 library(gprofiler2)
 library(patchwork)
 library(EnhancedVolcano)
+source("02_r_scripts/malat1_function.R")
 set.seed(42)
 
 ############################################# Load Input Data ###############################################
@@ -79,8 +80,23 @@ for(a in animals){
   # SCTransfrom might be beneficial bc it gices better signal to noise ratio. regression is performed with Mt5 and cell cylce Scores bc they introduce unwanted variation
   NPC <- SCTransform(NPC,  vst.flavor= "v2",method = "glmGamPoi",  verbose = F, vars.to.regress = c("percent.mt","S.Score","G2M.Score"))
   print(paste0(" I did SCTransformation for NPC_",a,"."))
+  png(filename = paste0("./03_plots/1_QC/Malat1-Filter_iAL",a,".png"))
+  RidgePlot(NPC, features = "Malat1")
+  dev.off()
+  norm_counts <- NPC@assays$SCT@data["Malat1",]
+  threshold <- define_malat1_threshold(norm_counts)
+  malat1_threshold <- norm_counts > threshold
+  NPC$malat1_threshold <- malat1_threshold
+  NPC$malat1_threshold <- factor(NPC$malat1_threshold, levels = c("TRUE","FALSE"))
+  png(filename = paste0("./03_plots/1_QC/Malat1-Filter2_iAL",a,".png"))
+  DimPlot(NPC, group.by = "malat1_threshold")
+  dev.off()
+  NPC <- subset(NPC, malat1_threshold == "TRUE")
+  print(paste0(" I removed cells expressing low Malat1 from NPC_",a,"."))
   NPC_list<-append(NPC_list,NPC)
 }
+
+
 
 rm(mmus_g2m, mmus_s)
 features <-SelectIntegrationFeatures(object.list = NPC_list, nfeatures = 3000)
@@ -174,18 +190,22 @@ mouseRNA.fine <- SingleR(test = sce,assay.type.test = 1,ref = mouseRNA.ref,label
 NPC_ALL_TRANSFORMED@meta.data$mouseRNA.main <- mouseRNA.main$pruned.labels
 NPC_ALL_TRANSFORMED@meta.data$mouseRNA.fine <- mouseRNA.fine$pruned.labels
 rm(mouseRNA.fine, mouseRNA.main, mouseRNA.ref, sce)
+x<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main)%>%summarise(n=n())
 ################### Save the SCT Transformed Seurat Object with Annotations############
 saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
 ################## Load SC Transformed Seurat Object with Annotations ###############
 NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
 ########################## Identify differentially expressed Genes in Clusters across Conditions Enhanced Volcano ############################
 #Add "celltype.stim" to meta data and PrepSCT FIndMarkers----
+Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.main"
+NPC_ALL_TRANSFORMED<-subset(NPC_ALL_TRANSFORMED, subset=mouseRNA.main!= "Adipocytes"&mouseRNA.main!= "Epithelial cells"&mouseRNA.main!= "NA"&mouseRNA.main!= "Erythrocytes")
 NPC_ALL_TRANSFORMED$celltype.stim <- paste(NPC_ALL_TRANSFORMED$mouseRNA.main, NPC_ALL_TRANSFORMED$stim, sep = "_")
 NPC_ALL_TRANSFORMED$celltype.sex <- paste(NPC_ALL_TRANSFORMED$mouseRNA.main, NPC_ALL_TRANSFORMED$sex, sep = "_")
 Idents(NPC_ALL_TRANSFORMED) <- "celltype.stim"
+
 NPC_ALL_TRANSFORMED <- PrepSCTFindMarkers(NPC_ALL_TRANSFORMED)
 a<-unique(NPC_ALL_TRANSFORMED@meta.data$mouseRNA.main)
-a<-subset(a, subset=a!= "Adipocytes"&a!= "Epithelial cells")
+y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main)%>%summarise(n=n())
 for (c in a){
   x <-subset(NPC_ALL_TRANSFORMED, idents = c(paste0(c,"_EtOH"), paste0(c,"_TAM")))
   x <-FindMarkers(x, assay = "SCT", ident.2 = paste0(c,"_EtOH"), ident.1 = paste0(c,"_TAM"), verbose = FALSE, recorrect_umi = FALSE)
@@ -205,7 +225,7 @@ NPC_female <-subset(NPC_ALL_TRANSFORMED, subset = sex == "female")
 Idents(NPC_ALL_TRANSFORMED) <- "celltype.stim"
 NPC_female <- PrepSCTFindMarkers(NPC_female)
 a<-unique(NPC_female@meta.data$mouseRNA.main)
-a<-subset(a, subset=a!= "Adipocytes"&a!= "Epithelial cells")
+NPC_female@meta.data%>%group_by(mouseRNA.main)%>%summarise(n=n())
 b<- list()
 for (c in a){
   x <-subset(NPC_female, idents = c(paste0(c,"_EtOH"), paste0(c,"_TAM")))
@@ -229,7 +249,8 @@ NPC_male <-subset(NPC_ALL_TRANSFORMED, subset = sex == "male")
 Idents(NPC_ALL_TRANSFORMED) <- "celltype.stim"
 NPC_male <- PrepSCTFindMarkers(NPC_male)
 a<-unique(NPC_male@meta.data$mouseRNA.main)
-a<-subset(a, subset=a!= "Adipocytes"&a!= "Epithelial cells")
+NPC_male@meta.data%>%group_by(mouseRNA.main)%>%summarise(n=n())
+a<-subset(a, subset=a!= "Dendritic cells")
 b<- list()
 for (c in a){
   x <-subset(NPC_male, idents = c(paste0(c,"_EtOH"), paste0(c,"_TAM")))
@@ -252,7 +273,8 @@ NPC_TAM <-subset(NPC_ALL_TRANSFORMED, subset = stim == "TAM")
 Idents(NPC_TAM) <- "celltype.sex"
 NPC_TAM <- PrepSCTFindMarkers(NPC_TAM)
 a<-unique(NPC_TAM@meta.data$mouseRNA.main)
-a<-subset(a, subset=a!= "Adipocytes"&a!= "Epithelial cells")
+NPC_TAM@meta.data%>%group_by(mouseRNA.main)%>%summarise(n=n())
+a<-subset(a, subset=a!= "Dendritic cells")
 b<- list()
 for (c in a){
   x <-subset(NPC_TAM, idents = c(paste0(c,"_female"), paste0(c,"_male")))
@@ -269,64 +291,62 @@ for (c in a){
 ######################## Find Conserved Markers inClusters across Stimulation ########
 ConservedMarkers<-list()
 b<-unique(NPC_ALL_TRANSFORMED@meta.data$mouseRNA.main)
-b<-subset(b, subset=b!= "Adipocytes"&b!= "Epithelial cells")
 Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.main"
-markers <- FindConservedMarkers(NPC_ALL_TRANSFORMED, assay = "SCT", ident.1 = "Hepatocytes", grouping.var = "stim",verbose = FALSE)
-
 for (c in b){
-  markers <- FindConservedMarkers(NPC_ALL_TRANSFORMED, assay = "SCT", ident.1 = b, grouping.var = "stim",verbose = FALSE)
+  markers <- FindConservedMarkers(NPC_ALL_TRANSFORMED, assay = "SCT", ident.1 = c, grouping.var = "stim",verbose = FALSE)
   write.csv(markers,paste0("./99_other/2_Clustering/ConservedMarkers_",c,".csv"))
   ConservedMarkers<-append(ConservedMarkers,markers)
-  print(paste0("I saved conserved Markers for ",b,"."))
+  print(paste0("I saved conserved Markers for ",c,"."))
 }
 
 ##################### Find TOP Markers that define Clusters ########
+DefaultAssay(NPC_ALL_TRANSFORMED) <-"SCT"
+Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.main"
 all.markers <- FindAllMarkers(NPC_ALL_TRANSFORMED, only.pos = T, min.pct = 0.5, logfc.threshold = 0.5)
-dim(all.markers)
 all.markers %>%  group_by(cluster) %>%  dplyr::filter(cluster == "Hepatocytes") %>%  slice_head(n = 100) %>%  ungroup() -> Hep_CLUSTERMARKER
-dim(all.markers)
 all.markers %>%  group_by(cluster) %>%  dplyr::filter(avg_log2FC > 1) %>%  slice_head(n = 10) %>%  ungroup() -> top10__MOUSEMAIN_CLUSTERMARKER
-dim(all.markers)
+Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.fine"
+all.markers <- FindAllMarkers(NPC_ALL_TRANSFORMED, only.pos = T, min.pct = 0.5, logfc.threshold = 0.5)
 all.markers %>%  group_by(cluster) %>%  dplyr::filter(avg_log2FC > 1) %>%  slice_head(n = 10) %>%  ungroup() -> top10__MOUSEFINE_CLUSTERMARKER
 dim(all.markers)
-
 write.csv(top10__MOUSEMAIN_CLUSTERMARKER, "./99_other/Clustering_3_top10_mouseMAIN_CLUSTERMARKER.csv", row.names=FALSE)
 write.csv(top10__MOUSEFINE_CLUSTERMARKER, "./99_other/Clustering_3_top10_mouseFINE_CLUSTERMARKER.csv", row.names=FALSE)
 
 saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
-NPC_ALL_TRANSFORMED <-readRDS(file = "./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
 
 ################################# Load Input Data  ##################################################
 #### Load RDS with Cluster Markers found in SCT assay  #####
-NPC_CLUSTER <- readRDS("./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
+NPC_ALL_TRANSFORMED <- readRDS("./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
 ######################## Find Conserved Markers in Clusters across Stimulation on Integrated Assay ########
 ConservedMarkers<-list()
-b<-unique(NPC_CLUSTER@meta.data$mouseRNA.main)
-b<-subset(b, subset=b!= "Adipocytes"&b!= "Epithelial cells")
-Idents(NPC_CLUSTER) <- "mouseRNA.main"
-markers <- FindConservedMarkers(NPC_CLUSTER, assay = "integrated", ident.1 = "Hepatocytes", grouping.var = "stim",verbose = FALSE)
+b<-unique(NPC_ALL_TRANSFORMED@meta.data$mouseRNA.main)
+Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.main"
 for (c in b){
-  markers <- FindConservedMarkers(NPC_CLUSTER, assay = "integrated", ident.1 = b, grouping.var = "stim",verbose = FALSE)
+  markers <- FindConservedMarkers(NPC_ALL_TRANSFORMED, assay = "integrated", ident.1 = c, grouping.var = "stim",verbose = FALSE)
   write.csv(markers,paste0("./99_other/2_Clustering/ConservedMarkers_integrated_",c,".csv"))
   ConservedMarkers<-append(ConservedMarkers,markers)
   print(paste0("I saved conserved Markers for ",c,"."))
 }
-##################### Find TOP Markers that define Clusters onIntegrated Assay########
-all.markers <- FindAllMarkers(NPC_CLUSTER, only.pos = T, min.pct = 0.5, logfc.threshold = 0.5)
-all.markers %>%  group_by(cluster) %>%  dplyr::filter(cluster == "Hepatocytes") %>%  slice_head(n = 100) %>%  ungroup() -> Hep_CLUSTERMARKER
+##################### Find TOP Markers that define Clusters on Integrated Assay########
+Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.main"
+DefaultAssay(NPC_ALL_TRANSFORMED) <-"integrated"
+all.markers <- FindAllMarkers(NPC_ALL_TRANSFORMED, only.pos = T, min.pct = 0.5, logfc.threshold = 0.5)
 all.markers %>%  group_by(cluster) %>%  dplyr::filter(avg_log2FC > 1) %>%  slice_head(n = 10) %>%  ungroup() -> top10__MOUSEMAIN_CLUSTERMARKER
+Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.fine"
+all.markers <- FindAllMarkers(NPC_ALL_TRANSFORMED, only.pos = T, min.pct = 0.5, logfc.threshold = 0.5)
 all.markers %>%  group_by(cluster) %>%  dplyr::filter(avg_log2FC > 1) %>%  slice_head(n = 10) %>%  ungroup() -> top10__MOUSEFINE_CLUSTERMARKER
+dim(all.markers)
 write.csv(top10__MOUSEMAIN_CLUSTERMARKER, "./99_other/Clustering_3_top10_mouseMAIN_CLUSTERMARKER_integrated.csv", row.names=FALSE)
 write.csv(top10__MOUSEFINE_CLUSTERMARKER, "./99_other/Clustering_3_top10_mouseFINE_CLUSTERMARKER_integrated.csv", row.names=FALSE)
 
 #### Save RDS with Cluster Markers found in Integrated Dataset #####
-saveRDS(NPC_CLUSTER, file = "./01_tidy_data/5_NPC_ALL_TRANSFORM_Markers_on_integrated.rds")
+saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/5_NPC_ALL_TRANSFORM_Markers_on_integrated.rds")
 
 ####################################################################################################################
 ##################### Plotting Things ####
 #NPC_ALL_TRANSFORMED <- SetIdent(NPC_ALL_TRANSFORMED, value = "mouseRNA.fine")
 Idents(NPC_ALL_TRANSFORMED) <-"mouseRNA.main"
-DefaultAssay(NPC_ALL_TRANSFORMED) <- "SCT"
+DefaultAssay(NPC_ALL_TRANSFORMED) <- "RNA"
 Hep_genes <-c("Saa1", "Saa2","Alb","mt-Cytb","mt-Co1", "2cdnaFLAG-LGP130", "1cdnaKANA","3cdnaZSGREEN","mt-Atp6")
 T_genes <-c("Cd3e","Cd3d", "Cd4", "Cd8a") 
 B_genes <-c("Cd19")

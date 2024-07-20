@@ -16,7 +16,7 @@
 #renv::install("patchwork")
 #renv::install("igraph") # für das scheiß igraph (benötigt für seurat) nach tausend jahren troublehsooting gefunden: ich brauche: sudo apt install build-essential gfortran UND sudo apt install build-essential gfortran, dann gehts
 #renv::install("Seurat")
-renv::install("sccustomize")
+#renv::install("sccustomize")
 
 #renv::install("HGNChelper")
 #renv::install("openxlsx")
@@ -49,7 +49,6 @@ library(patchwork)
 library(svglite)
 library(HGNChelper)
 library(openxlsx)
-
 set.seed(42)
 
 
@@ -87,7 +86,9 @@ features_DEG_Scott <-c("Mmrn2","Ntm","Fabp1","Apoa2","Ddit4l","Cd209a", "Nudt17"
 features_Cytokine <-c("Il6","Il10","Il1ß","Tnfa")
 NPC_CLUSTER<-SetIdent(NPC_CLUSTER,value = "mouseRNA.main")
 DefaultAssay(object = NPC_CLUSTER)<-"RNA"
+Create_Vplots(NPC_CLUSTER,"Malat1")
 Create_Vplots(NPC_CLUSTER,features_TOP10)
+
 Create_Vplots(NPC_CLUSTER,features_FACS)
 Create_Vplots(NPC_CLUSTER,features_DEG_Scott)
 ##### Bis hier alles seit dem neuen Integrieren durchgespielt. Nur DotPLot kram macht fehler 19.07.24
