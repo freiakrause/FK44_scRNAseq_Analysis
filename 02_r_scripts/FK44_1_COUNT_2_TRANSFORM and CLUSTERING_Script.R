@@ -19,6 +19,8 @@
 #if (!require("BiocManager", quietly = TRUE))
 #  renv::install("BiocManager")
 #renv::install("gprofiler2")
+#renv::install("DESeq2")
+renv::install("MAST")
 #BiocManager::install(version = "3.18")
 #BiocManager::install("SingleR")
 #BiocManager::install("celldex")
@@ -205,18 +207,102 @@ Idents(NPC_ALL_TRANSFORMED) <- "celltype.stim"
 
 NPC_ALL_TRANSFORMED <- PrepSCTFindMarkers(NPC_ALL_TRANSFORMED)
 a<-unique(NPC_ALL_TRANSFORMED@meta.data$mouseRNA.main)
-y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main)%>%summarise(n=n())
+a<-"T cells"
+y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
+c="T cells"
 for (c in a){
-  x <-subset(NPC_ALL_TRANSFORMED, idents = c(paste0(c,"_EtOH"), paste0(c,"_TAM")))
-  x <-FindMarkers(x, assay = "SCT", ident.2 = paste0(c,"_EtOH"), ident.1 = paste0(c,"_TAM"), verbose = FALSE, recorrect_umi = FALSE)
-  write.csv(x,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_",c,".csv"))
-  p<-  EnhancedVolcano(x,lab = rownames(x), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj", pCutoff = 1e-05, FCcutoff = 1.0 ,
+  single_w.de <-FindMarkers(NPC_ALL_TRANSFORMED, assay = NULL, ident.2 = paste0(c,"_EtOH"), ident.1 = paste0(c,"_TAM"), 
+                          verbose = T, recorrect_umi = FALSE, min.cells.feature = 3, min.pct= 0.02,
+                          test.use="wilcox")
+  for(g in rownames(single_w.de)[1:30]){
+    p<-VlnPlot(NPC_ALL_TRANSFORMED,assay="RNA", features = g, idents = c(paste0(c,"_EtOH"), paste0(c,"_TAM")), group.by = "stim")
+    print(p)
+  }
+  single_l.de <-FindMarkers(NPC_ALL_TRANSFORMED, assay = NULL, ident.2 = paste0(c,"_EtOH"), ident.1 = paste0(c,"_TAM"), 
+                            verbose = T, recorrect_umi = FALSE, min.cells.feature = 3, min.pct= 0.02,
+                            test.use="wilcox_limma")
+  single_M.de <-FindMarkers(NPC_ALL_TRANSFORMED, assay = NULL, ident.2 = paste0(c,"_EtOH"), ident.1 = paste0(c,"_TAM"), 
+                            verbose = T, recorrect_umi = FALSE, min.cells.feature = 3, min.pct= 0.02,
+                            test.use="MAST")
+  write.csv(single_w.de,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single",c,".csv"))
+  p<-  EnhancedVolcano(single_w.de,lab = rownames(single_w.de), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj", pCutoff = 1e-05, FCcutoff = 1.0 ,
                        title = paste0("DE ",c," TAM vs EtOH"), 
                        caption = 'FC cutoff, 1.0; p-value cutoff: p_val_adj<1e-05')
+  print(p)
+  p<-  EnhancedVolcano(single_l.de,lab = rownames(single_l.de), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj", pCutoff = 1e-05, FCcutoff = 1.0 ,
+                       title = paste0("DE ",c," TAM vs EtOH"), 
+                       caption = 'FC cutoff, 1.0; p-value cutoff: p_val_adj<1e-05')
+  print(p)
+  p<-  EnhancedVolcano(single_M.de,lab = rownames(single_M.de), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj", pCutoff = 1e-05, FCcutoff = 1.0 ,
+                       title = paste0("DE ",c," TAM vs EtOH"), 
+                       caption = 'FC cutoff, 1.0; p-value cutoff: p_val_adj<1e-05')
+  print(p)
   png(paste0("./03_plots/3_DEG_Analysis_MainCluster/EnhancedVolcano_Main_ALL",c,".png"))
   print(p)
   dev.off()
-  print(paste0("I just saved Enhanced Volcano of ",c,"."))
+  print(paste0("I just saved Enhanced Volcano of singeDE Analysis of ",c,"."))
+
+  pseudobulk <-AggregateExpression(NPC_ALL_TRANSFORMED, assays = "RNA", return.seurat = T, group.by = c("stim", "sample", "mouseRNA.main"))
+  tail(pseudobulk)
+  pseudobulk$celltype.stim <- paste(pseudobulk$mouseRNA.main, pseudobulk$stim, sep = "_")
+  Idents(pseudobulk) <- "celltype.stim"
+  z<-pseudobulk@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
+  print(z)
+  bulk.de <- FindMarkers(object = pseudobulk, min.cells.group=2,assay = "RNA",
+                              ident.2 = paste0(c,"_EtOH"), ident.1 = paste0(c,"_TAM"),
+                              test.use = "MAST")
+  p<-  EnhancedVolcano(bulk.de,lab = rownames(bulk.de), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj", pCutoff = 1e-05, FCcutoff = 1.0 ,
+                       title = paste0("DE ",c," TAM vs EtOH"), 
+                       caption = 'FC cutoff, 1.0; p-value cutoff: p_val_adj<1e-05')
+  print(p)
+  for(g in rownames(bulk.de)[1:30]){
+    p<-VlnPlot(NPC_ALL_TRANSFORMED,assay="RNA", features = g, idents = c(paste0(c,"_EtOH"), paste0(c,"_TAM")), group.by = "stim")
+    print(p)
+  }
+  print(paste0("I just found markers of bulkDE Analysis of ",c,"."))
+  names(bulk.de) <- paste0(names(bulk.de), ".bulk")
+  bulk.de$gene <- rownames(bulk.de)
+  names(single_w.de) <- paste0(names(single_w.de), "_w.sc")
+  single_w.de$gene <- rownames(single_w.de)
+  names(single_l.de) <- paste0(names(single_l.de), "_l.sc")
+  single_l.de$gene <- rownames(single_l.de)
+  names(single_M.de) <- paste0(names(single_M.de), "_M.sc")
+  single_M.de$gene <- rownames(single_M.de)
+  merge_dat <- merge(single_w.de, single_l.de,by = "gene")
+  merge_dat <- merge(merge_dat, bulk.de,by = "gene")
+  merge_dat <- merge(merge_dat, single_M.de,by = "gene")
+  merge_dat <- merge_dat[order(merge_dat$p_val.bulk), ]
+  # Number of genes that are marginally significant in both; marginally significant only in bulk; and marginally significant only in single-cell
+  common <- merge_dat$gene[which(merge_dat$p_val.bulk < 0.05 & 
+                                   merge_dat$p_val_w.sc < 0.05& 
+                                  merge_dat$p_val_l.sc < 0.05&
+                                   merge_dat$p_val_M.sc < 0.05)]
+  only_sc_w <- merge_dat$gene[which(merge_dat$p_val.bulk > 0.05 &
+                                      merge_dat$p_val_l.sc > 0.05 &
+                                      merge_dat$p_val_M.sc > 0.05 &
+                                    merge_dat$p_val_w.sc < 0.05)]
+  only_sc_l <- merge_dat$gene[which(merge_dat$p_val.bulk > 0.05 &
+                                      merge_dat$p_val_w.sc > 0.05 &
+                                      merge_dat$p_val_M.sc > 0.05 &
+                                      merge_dat$p_val_l.sc < 0.05)]
+  only_bulk <- merge_dat$gene[which(merge_dat$p_val.bulk < 0.05 & 
+                                      merge_dat$p_val_w.sc > 0.05&
+                                      merge_dat$p_val_M.sc > 0.05&
+                                      merge_dat$p_val_l.sc > 0.05)]
+  only_sc_M <- merge_dat$gene[which(merge_dat$p_val.bulk > 0.05 &
+                                      merge_dat$p_val_w.sc > 0.05 &
+                                      merge_dat$p_val_l.sc > 0.05 &
+                                      merge_dat$p_val_M.sc < 0.05)]
+  print(paste0('# Common: ',length(common)))
+  print(merge_dat[merge_dat$gene%in%common[1:10],c('gene','p_val_w.sc','p_val_l.sc','p_val.bulk')])
+  p<-VlnPlot(NPC_ALL_TRANSFORMED, features = common, idents = c(paste0(c,"_EtOH"), paste0(c,"_TAM")), group.by = "stim")
+  print(p)
+  p<-VlnPlot(NPC_ALL_TRANSFORMED, features = only_sc_M[1:10], idents = c(paste0(c,"_EtOH"), paste0(c,"_TAM")), group.by = "stim")
+  print(p)
+  p<-VlnPlot(NPC_ALL_TRANSFORMED,assay="RNA", features = c("Saa1","Saa2"), idents = c(paste0(c,"_EtOH"), paste0(c,"_TAM")), group.by = "stim")
+  print(p)
+  p<-VlnPlot(NPC_ALL_TRANSFORMED,assay="RNA", features = only_bulk[1:10], idents = c(paste0(c,"_EtOH"), paste0(c,"_TAM")), group.by = "stim")
+  print(p)
 }
 
 ########################## Identify differentially expressed Genes in Clusters across in Females Enhanced Volcano ############################
