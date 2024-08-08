@@ -191,6 +191,18 @@ p<-VlnPlot(NPC_ALL_TRANSFORMED, features = ConservedMarkers1, assay= "RNA", laye
 print(p)
 ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_VlnPlot1.png"), p,width = 8, height = 4, dpi = 800,bg="transparent")
 
+DefaultAssay(NPC_ALL_TRANSFORMED) <-"RNA"
+for (c in unique(NPC_ALL_TRANSFORMED$mouseRNA.main)){
+  mm <- ConservedMarkers5%>%filter(cluster == c)
+  p<-VlnPlot(NPC_ALL_TRANSFORMED, features = mm$genes, assay= "RNA", layer= "scale.data",log = T, stack = T,flip = F, fill.by = "ident")+
+  theme_classic()+NoLegend()+theme(axis.title = element_blank())+
+  labs(y="Cell Type")
+print(p)
+ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_VlnPlot",c,".png"), p,width = 8, height = 4, dpi = 800,bg="transparent")
+}
+
+#### Try to get Markers from Panglao DB to have independet clustermakers to proove my clusters
+#Code from inerent to get human geens to mouse gene conversion
 mouse_human_genes <- read.csv("http://www.informatics.jax.org/downloads/reports/HOM_MouseHumanSequence.rpt",sep="\t")
 # separate human and mouse 
 mouse <- split.data.frame(mouse_human_genes,mouse_human_genes$Common.Organism.Name)[[2]]
@@ -202,12 +214,15 @@ human <- human[,c(1,4)]
 mh_data <- merge.data.frame(mouse,human,by = "DB.Class.Key",all.y = TRUE) 
 mh_data<-mh_data%>%arrange(desc(Symbol.y))
 head(mh_data)
-PanglaoMarkers <- read.table("./99_other/PanglaoDB_markers_27_Mar_2020.tsv",h=T,sep="\t",quote="")  
+#Load Panglao Markers
+PanglaoMarkers <- read.table("./99_other/PanglaoDB_markers_27_Mar_2020.tsv",h=T,sep="\t",quote="")
+#Shrink Dataset to contain right species, necessary cell types and organs and some selection in sensitivity/canonical marker
 PanglaoMarkers <-PanglaoMarkers%>%
-  filter(species == "Mm" | species == "Mm Hs" & sensitivity_mouse > 0.01,
+  filter(species == "Mm" | species == "Mm Hs" & sensitivity_mouse > 0.01,cell.type !="Adipocytes",cell.type !="Chondrocytes",cell.type !="Plateletes",
                         !is.na(sensitivity_mouse ), !is.na(specificity_mouse), !is.na(canonical.marker),canonical.marker==1,
                         organ == "Liver" |organ == "Immune system" | organ == "Blood" |organ == "Connective tissue" | organ=="Epithelium"|
                         organ == "Vasculature" |organ == "Other")
+#Get the human genes names fromPanlga transformed to mouseGene names
 PanglaoMarkers[,"mouseGene"] <- NA
 for (g in mh_data$Symbol.y){
   if (g %in% PanglaoMarkers$official.gene.symbol){
@@ -218,12 +233,14 @@ for (g in mh_data$Symbol.y){
     }
     }
   }
-
+#reorder columns
 PanglaoMarkers%>%select(cell.type,mouseGene,official.gene.symbol,species,organ,sensitivity_mouse,specificity_mouse,ubiquitousness.index,nicknames,product.description,gene.type,germ.layer) 
+#check if there a unassigned mosueGenes
 nanana<-PanglaoMarkers%>%filter(is.na(mouseGene) )
-#### need to find mouse gene names vor the nananana s ###
+#### need to find mouse gene names for the nananana s ###
 write.csv(nanana,paste0("./99_other/2_Clustering/PanglaoDBMarkes_woMouseName.csv"))
 #### added mouse gene names by hand #####
+# convert the NA mosuegenes with the hand filled datatable to mouseGene names
 Panglao_noNA <-read.csv("99_other/2_Clustering/PanglaoDBMarkers_manually_assigned.csv", sep = ";")
 for (g in Panglao_noNA$official.gene.symbol){
   if (g %in% PanglaoMarkers$official.gene.symbol){
@@ -234,8 +251,10 @@ for (g in Panglao_noNA$official.gene.symbol){
     }
   }
 }
+#Are there NAs left?
 nonono<-PanglaoMarkers%>%filter(is.na(mouseGene) )
-PanglaoMarkers%>%group_by(cell.type)%>%arrange((sensitivity_mouse),.by_group = T)
+#Sort genes in Panlga bei sensitivity in mouse
+PanglaoMarkers <-PanglaoMarkers%>%group_by(cell.type)%>%arrange((desc(sensitivity_mouse)),.by_group = T)
 
 #PanglaoMarkers<-PanglaoMarkers%>%
 #  mutate(mouseGene = ifelse(mouseGene %in% NPC_ALL_TRANSFORMED@assays$RNA@meta.data$var.features, mh_data$Symbol.x, NA))%>%
@@ -271,20 +290,7 @@ Create_Vplots <- function(DataSet,feature_list){
     }
 }
 ####### Create Violin Plots of all Clusters with shown potential marker genes ############
-#From Internet/head/FACS
-features_FACS <- c("Alb","Clec4f", "Cd19","Cd3e", "Nkg7", "Cd14", "Lyz1","Lyz2","Timp1", "Col1a2", "Krt19", "Ly6g", "C1qa" , "Itgax", "Cd86") 
-#FROM Scott Paper DEGs in mouse cells
-features_DEG_Scott <-c("Mmrn2","Ntm","Fabp1","Apoa2","Ddit4l","Cd209a", "Nudt17","Ly6i")
-features_Cytokine <-c("Il6","Il10","Il1ß","Tnfa")
-NPC_CLUSTER<-SetIdent(NPC_CLUSTER,value = "mouseRNA.main")
-DefaultAssay(object = NPC_CLUSTER)<-"RNA"
-Create_Vplots(NPC_CLUSTER,"Malat1")
-Create_Vplots(NPC_CLUSTER,features_TOP10)
-Create_Vplots(NPC_CLUSTER,features_FACS)
-Create_Vplots(NPC_CLUSTER,features_DEG_Scott)
 
-# https://divingintogeneticsandgenomics.com/post/how-to-make-a-multi-group-dotplot-for-single-cell-rnaseq-data/
-#https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2023.1223471/full#supplementary-material
 
 ########################## Identify differentially expressed Genes in Clusters across Conditions Enhanced Volcano ############################
 #Add "celltype.stim" to meta data and PrepSCT FIndMarkers----
