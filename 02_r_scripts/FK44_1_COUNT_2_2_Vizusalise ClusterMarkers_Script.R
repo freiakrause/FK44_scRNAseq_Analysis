@@ -46,16 +46,13 @@ library(patchwork)
 library(EnhancedVolcano)
 library(readr)
 source("02_r_scripts/malat1_function.R")
+source("02_r_scripts/VlnPlot_Function.R") 
 set.seed(42)
 #### Load Input Data ####
 ### Results from FK44.1_COUNT_2_0
 ### SoupX, QC, SCT, Integration, Clustering
 NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
 y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
-
-#Remove Clusters with low cell numbers
-NPC_ALL_TRANSFORMED<-subset(NPC_ALL_TRANSFORMED, subset=mouseRNA.main!= "Adipocytes"&mouseRNA.main!= "Epithelial cells"&mouseRNA.main!= "NA"&mouseRNA.main!= "Erythrocytes"&mouseRNA.main!= "Dendritic cells")
-z<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
 #Add colums for celltype_stim and celltype_sex for potential future analysis
 NPC_ALL_TRANSFORMED$celltype.stim <- paste(NPC_ALL_TRANSFORMED$mouseRNA.main, NPC_ALL_TRANSFORMED$stim, sep = "_")
 NPC_ALL_TRANSFORMED$celltype.sex <- paste(NPC_ALL_TRANSFORMED$mouseRNA.main, NPC_ALL_TRANSFORMED$sex, sep = "_")
@@ -63,12 +60,52 @@ NPC_ALL_TRANSFORMED$celltype.sex <- paste(NPC_ALL_TRANSFORMED$mouseRNA.main, NPC
 DefaultAssay(NPC_ALL_TRANSFORMED) <-"SCT"
 NPC_ALL_TRANSFORMED <- PrepSCTFindMarkers(NPC_ALL_TRANSFORMED)
 #Order Clusters in my way
-Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.main"
+Idents(NPC_ALL_TRANSFORMED) <- "celltype.stim"
 myClusterSorting <-c("T cells","NK cells","B cells","Macrophages","Microglia","Monocytes","Granulocytes","Fibroblasts","Endothelial cells","Hepatocytes")
-Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting)
+myClusterSorting2 <-c("T cells_EtOH","T cells_TAM","NK cells_EtOH","NK cells_TAM","B cells_EtOH","B cells_TAM","Macrophages_EtOH","Macrophages_TAM",
+                     "Microglia_EtOH","Microglia_TAM","Monocytes_EtOH","Monocytes_TAM","Granulocytes_EtOH","Granulocytes_TAM",
+                     "Fibroblasts_EtOH","Fibroblasts_TAM","Endothelial cells_EtOH","Endothelial cells_TAM","Hepatocytes_EtOH","Hepatocytes_TAM")
+
+Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting2)
+VlnPlot(NPC_ALL_TRANSFORMED,features = c("Cxcl1","Il6","Il10"),assay = "RNA", split.by = "stim")
+Cytokines_and_Stuff <-c("Lyve1","Flt4","Efnb2","Ephb4","Icam1","Selp","F3",
+  "Itgax","Cd163","Msr1","Mrc1","Vegfa","Maf","Cxcl9","Cxcl10","Cxcl11","Stat6","Socs1",
+  "Cxcl1","Il6","Il10","Tgfb1","Ifng","Cxcr6","Il2","Saa1","Saa2","Cd40",
+                        "Cd28","Cd86","Stat3","Socs3","Gzma","Gzmb","Prf1","Il4","Cxcl15","Ccl2","Tnf",
+                        "Runx3","Cd8a","Cd4","Cd3e","Il21","Il23a","Il17a","Il17f","Il22","Rorc","Rora","Tbx21","Gata3","Foxp3","Il2ra","Eomes","Il1b","Ifng","Il12a")
+p<-DotPlot(NPC_ALL_TRANSFORMED,  assay = "RNA", features =unique(Cytokines_and_Stuff),cols=c("pink","green"))+
+  RotatedAxis()+
+  scale_size(breaks = c(0, 25, 50, 75, 100),range(0,10))+
+  scale_colour_distiller(palette="Blues", trans="reverse")+
+  guides(colour = guide_colourbar(reverse = TRUE))+
+  theme(panel.background = element_rect(fill = "gray95",colour="black", linewidth = 1),
+        axis.line.y.left =element_blank(),
+        axis.title.x = element_text(size = 10),
+        axis.title.y = element_text(size = 10),
+        axis.text.y.left = element_text(size = 8),
+        axis.text.x.bottom = element_text(size = 8),
+        legend.justification = "top", 
+        legend.key.height= unit(0.4, 'cm'), 
+        legend.key.width= unit(0.2, 'cm'),
+        legend.title = element_text(size=8),
+        legend.text = element_text(size=7),
+        axis.line.x.bottom =element_blank(),
+        axis.text.x =element_text(angle = 90,vjust = 0.5))+
+  xlab("Marker genes")+
+  ylab("Cell Type")
+print(p)
+ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_DotPlot5.png"), p,width = 12, height = 3, dpi = 800,bg="transparent")
+
+
+
+
+
+
+
+
 #saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
 ######################## Find Conserved Markers inClusters across Stimulation ########
-NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
+#NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
 ConservedMarkers5<-data.frame()
 ConservedMarkers10<-data.frame()
 ConservedMarkers20<-data.frame()
