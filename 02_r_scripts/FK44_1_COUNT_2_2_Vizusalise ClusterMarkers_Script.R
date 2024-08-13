@@ -56,23 +56,22 @@ y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n(
 #Add colums for celltype_stim and celltype_sex for potential future analysis
 NPC_ALL_TRANSFORMED$celltype.stim <- paste(NPC_ALL_TRANSFORMED$mouseRNA.main, NPC_ALL_TRANSFORMED$stim, sep = "_")
 NPC_ALL_TRANSFORMED$celltype.sex <- paste(NPC_ALL_TRANSFORMED$mouseRNA.main, NPC_ALL_TRANSFORMED$sex, sep = "_")
+myClusterSorting <-c("T cells","NK cells","B cells","Macrophages","Microglia","Monocytes","Granulocytes","Fibroblasts","Endothelial cells","Hepatocytes")
+myClusterSorting2 <-c("T cells_EtOH","T cells_TAM","NK cells_EtOH","NK cells_TAM","B cells_EtOH","B cells_TAM","Macrophages_EtOH","Macrophages_TAM",
+                      "Microglia_EtOH","Microglia_TAM","Monocytes_EtOH","Monocytes_TAM","Granulocytes_EtOH","Granulocytes_TAM",
+                      "Fibroblasts_EtOH","Fibroblasts_TAM","Endothelial cells_EtOH","Endothelial cells_TAM","Hepatocytes_EtOH","Hepatocytes_TAM")
 #### Save and vizualizes TOPClusterMarker #####
 DefaultAssay(NPC_ALL_TRANSFORMED) <-"SCT"
 NPC_ALL_TRANSFORMED <- PrepSCTFindMarkers(NPC_ALL_TRANSFORMED)
-#Order Clusters in my way
 Idents(NPC_ALL_TRANSFORMED) <- "celltype.stim"
-myClusterSorting <-c("T cells","NK cells","B cells","Macrophages","Microglia","Monocytes","Granulocytes","Fibroblasts","Endothelial cells","Hepatocytes")
-myClusterSorting2 <-c("T cells_EtOH","T cells_TAM","NK cells_EtOH","NK cells_TAM","B cells_EtOH","B cells_TAM","Macrophages_EtOH","Macrophages_TAM",
-                     "Microglia_EtOH","Microglia_TAM","Monocytes_EtOH","Monocytes_TAM","Granulocytes_EtOH","Granulocytes_TAM",
-                     "Fibroblasts_EtOH","Fibroblasts_TAM","Endothelial cells_EtOH","Endothelial cells_TAM","Hepatocytes_EtOH","Hepatocytes_TAM")
-
 Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting2)
-VlnPlot(NPC_ALL_TRANSFORMED,features = c("Cxcl1","Il6","Il10"),assay = "RNA", split.by = "stim")
+VlnPlot(NPC_ALL_TRANSFORMED,features = c("Col1a2"),assay = "RNA")
 Cytokines_and_Stuff <-c("Lyve1","Flt4","Efnb2","Ephb4","Icam1","Selp","F3",
   "Itgax","Cd163","Msr1","Mrc1","Vegfa","Maf","Cxcl9","Cxcl10","Cxcl11","Stat6","Socs1",
   "Cxcl1","Il6","Il10","Tgfb1","Ifng","Cxcr6","Il2","Saa1","Saa2","Cd40",
                         "Cd28","Cd86","Stat3","Socs3","Gzma","Gzmb","Prf1","Il4","Cxcl15","Ccl2","Tnf",
-                        "Runx3","Cd8a","Cd4","Cd3e","Il21","Il23a","Il17a","Il17f","Il22","Rorc","Rora","Tbx21","Gata3","Foxp3","Il2ra","Eomes","Il1b","Ifng","Il12a")
+                        "Runx3","Cd8a","Cd4","Cd3e","Il21","Il23a","Il17a","Il17f","Il22","Rorc","Rora","Tbx21","Gata3","Foxp3","Il2ra","Eomes","Il1b","Ifng","Il12a",
+  "Col1a2","Col3a1","Fgg","Fga","Fgb","Fbln5","Apoa1","Fabp1","Gnmt","Selenbp2")
 p<-DotPlot(NPC_ALL_TRANSFORMED,  assay = "RNA", features =unique(Cytokines_and_Stuff),cols=c("pink","green"))+
   RotatedAxis()+
   scale_size(breaks = c(0, 25, 50, 75, 100),range(0,10))+
@@ -94,18 +93,14 @@ p<-DotPlot(NPC_ALL_TRANSFORMED,  assay = "RNA", features =unique(Cytokines_and_S
   xlab("Marker genes")+
   ylab("Cell Type")
 print(p)
-ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_DotPlot5.png"), p,width = 12, height = 3, dpi = 800,bg="transparent")
-
-
-
-
-
-
-
+ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_DotPlot_Cytokines Test.png"), p,width = 12, height = 3, dpi = 800,bg="transparent")
 
 #saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
 ######################## Find Conserved Markers inClusters across Stimulation ########
 #NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
+Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.main"
+Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting)
+
 ConservedMarkers5<-data.frame()
 ConservedMarkers10<-data.frame()
 ConservedMarkers20<-data.frame()
@@ -134,6 +129,7 @@ ConservedMarkers1<-c("Cd3e","Gzma","Cd79a","Clec4f","Ank2","Havcr2","S100a8","Co
 ConservedMarkers5<-ConservedMarkers5[order(factor(ConservedMarkers5$cluster, levels=myClusterSorting)),]                        
 ConservedMarkers10<-ConservedMarkers10[order(factor(ConservedMarkers10$cluster, levels=myClusterSorting)),]
 ConservedMarkers20<-ConservedMarkers20[order(factor(ConservedMarkers20$cluster, levels=myClusterSorting)),]
+###### Find Conserved Markes with Celltypes per Stim ######
 
 #### Do HeatMap of Marker 5 Marker genes per Clusters ####
 p<-DoHeatmap(NPC_ALL_TRANSFORMED, assay = "RNA", slot = "scale.data", features = c("Ptprc",ConservedMarkers5$gene),
@@ -316,18 +312,6 @@ for(c in unique(PanglaoMarkers$cell.type)){
 
   
 ################### Below IS STILL CHAOS ################################
-###################### Function Create_Vplots ####################################
-#Create multiple ViolinPlots with Seurat Object and vector of displayed features as input as save the plots as png
-Create_Vplots <- function(DataSet,feature_list){
-  for (i in feature_list){
-    print(i)
-    a <- VlnPlot(DataSet, features = i)
-    print(a)
-    ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_",i,".png"), a,bg="transparent")
-    }
-}
-####### Create Violin Plots of all Clusters with shown potential marker genes ############
-
 
 ########################## Identify differentially expressed Genes in Clusters across Conditions Enhanced Volcano ############################
 #Add "celltype.stim" to meta data and PrepSCT FIndMarkers----
@@ -344,20 +328,6 @@ for (c in a){
                             test.use="MAST")
   write.csv(single_l.de,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single_limma",c,".csv"))
   write.csv(single_M.de,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single_MAST",c,".csv"))
-  png(paste0("./03_plots/3_DEG_Analysis_MainCluster/EnhancedVolcano_Single_Limma",c,".png"))
-  p<-  EnhancedVolcano(single_l.de,lab = rownames(single_l.de), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj", pCutoff = 1e-05, FCcutoff = 1.0 ,
-                       title = paste0("DE ",c," TAM vs EtOH"), 
-                       caption = 'FC cutoff, 1.0; p-value cutoff: p_val_adj<1e-05')
-  print(p)
-  dev.off()
-  png(paste0("./03_plots/3_DEG_Analysis_MainCluster/EnhancedVolcano_Single_MAST",c,".png"))
-  p<-  EnhancedVolcano(single_M.de,lab = rownames(single_M.de), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj", pCutoff = 1e-05, FCcutoff = 1.0 ,
-                       title = paste0("DE ",c," TAM vs EtOH"), 
-                       caption = 'FC cutoff, 1.0; p-value cutoff: p_val_adj<1e-05')
-  print(p)
-  dev.off()
-  print(paste0("I just saved Enhanced Volcano of singeDE Analysis of ",c,"."))
-  
   names(single_l.de) <- paste0(names(single_l.de), "_l.sc")
   single_l.de$gene <- rownames(single_l.de)
   names(single_M.de) <- paste0(names(single_M.de), "_M.sc")
@@ -367,29 +337,76 @@ for (c in a){
   # Number of genes that are marginally significant in both; marginally significant only in bulk; and marginally significant only in single-cell
   common <- merge_dat$gene[which(merge_dat$p_val_l.sc < 0.05&
                                    merge_dat$p_val_M.sc < 0.05)]
-  
+  write.csv(common,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_Common",c,".csv"))
   only_sc_l <- merge_dat$gene[which(merge_dat$p_val_M.sc > 0.05 &
                                       merge_dat$p_val_l.sc < 0.05)]
+  write.csv(only_sc_l,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_Only_Limma",c,".csv"))
   
   only_sc_M <- merge_dat$gene[which(  merge_dat$p_val_l.sc > 0.05 &
                                         merge_dat$p_val_M.sc < 0.05)]
-  print(paste0('# Common: ',length(common)))
-  print(merge_dat[merge_dat$gene%in%common[1:10],c('gene','p_val_M.sc','p_val_l.sc')])
-  png(paste0("./03_plots/3_DEG_Analysis_MainCluster/Vln_Common_Limma_MAST",c,".png"))
-  p<-VlnPlot(NPC_ALL_TRANSFORMED, features = common[1:16], idents = c(paste0(c,"_EtOH"), paste0(c,"_TAM")), group.by = "stim")
-  print(p)
-  dev.off()
-  png(paste0("./03_plots/3_DEG_Analysis_MainCluster/Vln_Only_Limma",c,".png"))
-  p<-VlnPlot(NPC_ALL_TRANSFORMED, features = only_sc_M[1:16], idents = c(paste0(c,"_EtOH"), paste0(c,"_TAM")), group.by = "stim")
-  print(p)
-  dev.off()
-  png(paste0("./03_plots/3_DEG_Analysis_MainCluster/Vln_Only_MAST",c,".png"))
-  p<-VlnPlot(NPC_ALL_TRANSFORMED, features = only_sc_l[1:16], idents = c(paste0(c,"_EtOH"), paste0(c,"_TAM")), group.by = "stim")
-  print(p)
-  dev.off()
-}
+  write.csv(only_sc_M,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_Only_MAST",c,".csv"))
+  
+  }
+
+MAST<-read.csv("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single_MASTT cells.csv")
+MAST<-MAST%>%mutate(pct.diff=(pct.1-pct.2))%>%arrange(desc(avg_log2FC),desc(pct.1))
+p<-DoHeatmap(subset(NPC_ALL_TRANSFORMED, mouseRNA.main=="T cells"), assay = "RNA",slot = "scale.data", features = c(unique(MAST$X[10:100])),
+             draw.lines = T,lines.width = NULL,
+             label = F, group.bar =T)+
+  scale_fill_viridis_c()+
+  theme(axis.text.y.left = element_text(size = 6),
+        legend.justification = "top", 
+        legend.title = element_text(size=6),
+        legend.key.height= unit(0.2, 'cm'), 
+        legend.key.width= unit(0.1, 'cm'),
+        legend.text = element_text(size=4))
+print(p)
 
 
+
+p<-DotPlot(subset(NPC_ALL_TRANSFORMED, mouseRNA.main=="T cells"),  assay = "RNA",scale=F,features =c(unique(MAST$X[1:50])))+
+  RotatedAxis()+
+  scale_size(breaks = c(0, 25, 50, 75, 100),range(0,10))+
+  scale_colour_distiller(palette="Blues", trans="reverse")+
+  guides(colour = guide_colourbar(reverse = TRUE))+
+  theme(panel.background = element_rect(fill = "red",colour="black", linewidth = 1),
+        axis.line.y.left =element_blank(),
+        axis.title.x = element_text(size = 10),
+        axis.title.y = element_text(size = 10),
+        axis.text.y.left = element_text(size = 8),
+        axis.text.x.bottom = element_text(size = 8),
+        legend.justification = "top", 
+        legend.key.height= unit(0.4, 'cm'), 
+        legend.key.width= unit(0.2, 'cm'),
+        legend.title = element_text(size=8),
+        legend.text = element_text(size=7),
+        axis.line.x.bottom =element_blank(),
+        axis.text.x =element_text(angle = 90,vjust = 0.5))+
+  xlab("Marker genes")+
+  ylab("Cell Type")
+print(p)
+
+
+
+
+
+
+
+
+
+png(paste0("./03_plots/3_DEG_Analysis_MainCluster/EnhancedVolcano_Single_Limma",c,".png"))
+p<-  EnhancedVolcano(single_l.de,lab = rownames(single_l.de), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj", pCutoff = 1e-05, FCcutoff = 1.0 ,
+                     title = paste0("DE ",c," TAM vs EtOH"), 
+                     caption = 'FC cutoff, 1.0; p-value cutoff: p_val_adj<1e-05')
+print(p)
+dev.off()
+png(paste0("./03_plots/3_DEG_Analysis_MainCluster/EnhancedVolcano_Single_MAST",c,".png"))
+p<-  EnhancedVolcano(MAST,lab = MAST$X, x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj", pCutoff = 0.05, FCcutoff = 0.5 ,
+                     title = paste0("DE ",c," TAM vs EtOH"), 
+                     caption = 'FC cutoff, 0.5; p-value cutoff: p_val_adj<1e-05')
+print(p)
+dev.off()
+print(paste0("I just saved Enhanced Volcano of singeDE Analysis of ",c,"."))
 
 ##################### Plotting Things ####
 #NPC_ALL_TRANSFORMED <- SetIdent(NPC_ALL_TRANSFORMED, value = "mouseRNA.fine")
