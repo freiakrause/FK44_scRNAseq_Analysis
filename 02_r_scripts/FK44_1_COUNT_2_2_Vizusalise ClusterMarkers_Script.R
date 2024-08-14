@@ -49,29 +49,116 @@ source("02_r_scripts/malat1_function.R")
 source("02_r_scripts/VlnPlot_Function.R") 
 set.seed(42)
 #### Load Input Data ####
-### Results from FK44.1_COUNT_2_0
-### SoupX, QC, SCT, Integration, Clustering
-NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
+### Results from FK44.1_COUNT_2_0_TRANSFORM and CLUSTERING
+### SoupX, QC, SCT, Integration, Clustering, Annotation, Removal of Clusters with low cell numbers
+NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds")
 y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
-#Add colums for celltype_stim and celltype_sex for potential future analysis
-NPC_ALL_TRANSFORMED$celltype.stim <- paste(NPC_ALL_TRANSFORMED$mouseRNA.main, NPC_ALL_TRANSFORMED$stim, sep = "_")
-NPC_ALL_TRANSFORMED$celltype.sex <- paste(NPC_ALL_TRANSFORMED$mouseRNA.main, NPC_ALL_TRANSFORMED$sex, sep = "_")
+DefaultAssay(NPC_ALL_TRANSFORMED) <-"SCT"
+NPC_ALL_TRANSFORMED <- PrepSCTFindMarkers(NPC_ALL_TRANSFORMED)
+#saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
+#NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
+
+#### Define Cluster Sorting
 myClusterSorting <-c("T cells","NK cells","B cells","Macrophages","Microglia","Monocytes","Granulocytes","Fibroblasts","Endothelial cells","Hepatocytes")
 myClusterSorting2 <-c("T cells_EtOH","T cells_TAM","NK cells_EtOH","NK cells_TAM","B cells_EtOH","B cells_TAM","Macrophages_EtOH","Macrophages_TAM",
                       "Microglia_EtOH","Microglia_TAM","Monocytes_EtOH","Monocytes_TAM","Granulocytes_EtOH","Granulocytes_TAM",
                       "Fibroblasts_EtOH","Fibroblasts_TAM","Endothelial cells_EtOH","Endothelial cells_TAM","Hepatocytes_EtOH","Hepatocytes_TAM")
-#### Save and vizualizes TOPClusterMarker #####
-DefaultAssay(NPC_ALL_TRANSFORMED) <-"SCT"
-NPC_ALL_TRANSFORMED <- PrepSCTFindMarkers(NPC_ALL_TRANSFORMED)
+#### Define some interesting geens (manually)
+Cytokines_and_Stuff <-c("Lyve1","Flt4","Efnb2","Ephb4","Icam1","Selp","F3",
+                        "Itgax","Cd163","Msr1","Mrc1","Vegfa","Maf","Cxcl9","Cxcl10","Cxcl11","Stat6","Socs1",
+                        "Cxcl1","Il6","Il10","Tgfb1","Ifng","Cxcr6","Il2","Saa1","Saa2","Cd40",
+                        "Cd28","Cd86","Stat3","Socs3","Gzma","Gzmb","Prf1","Il4","Cxcl15","Ccl2","Tnf",
+                        "Runx3","Cd8a","Cd4","Cd3e","Il21","Il23a","Il17a","Il17f","Il22","Rorc","Rora","Tbx21","Gata3","Foxp3","Il2ra","Eomes","Il1b","Ifng","Il12a",
+                        "Col1a2","Col3a1","Fgg","Fga","Fgb","Fbln5","Apoa1","Fabp1","Gnmt","Selenbp2")
+Leukocyte_Marker <-c("Ptprc","Cd52")#alle noch nicht überprüft
+Lymphocyte_Marker <-c()#alle noch nicht überprüft #"Ltb"
+T_Marker <-c("Cd4","Cd8a","Il7r","Cd3d","Cd3e","Cd3g","Lat", "Lck")
+NK_Marker <-c("Ccl5","Nkg7","Gzmb","Gzma","Ncr1","Prf1","Ccl4","Itgax","Ccl3")
+B_Marker <-c("Cd19","Cd79a","Ighm","Ighd","Fcmr","Ly6d","Ebf1","Ms4a1")#,"Cd86"
+myeloid_Marker <-c("Itgax","Cd14","Fcgr3","Itgam")
+KC_Marker <-c("Clec4f","C1qc","C1qa","C1qb","Csf1r","Adgre1","Cd14","Cd163","Clec1b")
+Macro_Marker <-c("Cd74","Cyth4","Lyz2","Csf1r","Cd68","Aif1","Cybb","Ccl6")
+Micro_Marker <-c()
+Mono_Marker <-c()
+Neutro_Marker <-c("Cd14","Mmp8","Mmp9","Ly6g","Hdc","Il1r2","Ccr1") #,"Hp","Lcn2"
+Fibro_Marker <-c("Gsn","Egr1","Col6a2","Fstl1","Dcn","Mmp2","Lum")
+HSC_Marker <-c("Col1a1","Col1a2","Col3a1","Igfbp3","Igfbp7","Bgn")
+Endo_Marker <-c("Id3","Ptprb","Pecam1","Egfl7","Gng11","Flt1","Cldn5","Adgrf5","Eng")
+Hep_Marker <-c("Ass1","Orm1","Apoa1","Apoa2","Alb","Aldh6a1","Ambp")
+Canonical_ClusterMarker <-unique(c(Leukocyte_Marker, Lymphocyte_Marker,T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker, Macro_Marker, Micro_Marker, Mono_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker,Endo_Marker,Hep_Marker))
+#### Do HeatMap of manually assigned Canonical Markers ####
+p<-DoHeatmap(NPC_ALL_TRANSFORMED, assay = "RNA",slot = "scale.data", features = Canonical_ClusterMarker,
+             draw.lines = T,lines.width = NULL,
+             label = F, group.bar =T)+
+  scale_fill_viridis_c()+
+  theme(axis.text.y.left = element_text(size = 2.8),
+        legend.justification = "top", 
+        legend.title = element_text(size=6),
+        legend.key.height= unit(0.2, 'cm'), 
+        legend.key.width= unit(0.1, 'cm'),
+        legend.text = element_text(size=4))
+print(p)
+ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_Canonnical_HeatMap.png"), p,width = 3.25, height = 3.25,dpi = 1200, bg="transparent")
+#### Do DotPlot of manually assgined Canonical Markers
+Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.main"
+Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting)
+p<-DotPlot(NPC_ALL_TRANSFORMED,  assay = "RNA", scale= T, features =unique(Canonical_ClusterMarker))+
+  RotatedAxis()+
+  scale_size(breaks = c(0, 25, 50, 75, 100),range(0,10))+
+  scale_colour_distiller(palette="Blues", trans="reverse")+
+  coord_cartesian( ylim=c(0,10.5),clip = "off")+
+  annotate("text", y = 10.7, x = 0.5+length(unique(c(Leukocyte_Marker, Lymphocyte_Marker)))/2, label = "L", size=4)+
+  annotate("text", y = 10.7, x = 0.5+(length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker)))-length(T_Marker)/2), label = "T",size=4)+
+  annotate("text", y = 10.7, x = 0.5+(length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker)))-length(NK_Marker)/2), label = "NK",size=4)+
+  annotate("text", y = 10.7, x = 0.5+(length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker)))-length(B_Marker)/2), label = "B",size=4)+
+  annotate("text", y = 10.7, x = 0.5+(length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker)))-length(myeloid_Marker)/2), label = "Mye",size=4)+
+  annotate("text", y = 10.7, x = 0.5+(length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker)))-length(KC_Marker)/2), label = "KC",size=4)+
+  annotate("text", y = 10.7, x = 0.5+(length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker,Macro_Marker)))-length(Macro_Marker)/2), label = "Macro",size=4)+
+  annotate("text", y = 10.7, x = 0.5+(length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker,Macro_Marker,Micro_Marker,Mono_Marker,Neutro_Marker)))-length(Neutro_Marker)/2), label = "N",size=4)+
+  annotate("text", y = 10.7, x = 0.5+(length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker,Macro_Marker,Micro_Marker,Mono_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker)))-(length(HSC_Marker)+length(Fibro_Marker))/2), label = "Fibro & HSC",size=4)+
+  annotate("text", y = 10.7, x = 0.5+(length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker,Macro_Marker,Micro_Marker,Mono_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker,Endo_Marker)))-length(Endo_Marker)/2), label = "Endo",size=4)+
+  annotate("text", y = 10.7, x = 0.5+(length(unique(Canonical_ClusterMarker))-length(Hep_Marker)/2), label = "Hep",size=4)+
+  guides(colour = guide_colourbar(reverse = TRUE))+
+  theme(panel.background = element_rect(fill = "gray95", linewidth = 0.8,color = "black"),
+        axis.line.y.left =element_blank(),
+        axis.title.x = element_text(size = 10),
+        axis.title.y = element_text(size = 10),
+        axis.text.y.left = element_text(size = 9),
+        axis.text.x.bottom = element_text(size = 8, angle = 90,vjust = 0.5),
+        legend.justification = "top", 
+        legend.key.height= unit(0.4, 'cm'), 
+        legend.key.width= unit(0.2, 'cm'),
+        legend.title = element_text(size=8),
+        legend.text = element_text(size=7),
+        axis.line.x.bottom =element_blank(),
+        axis.text.x.top =element_text(angle =0,vjust = 0.5))+
+  xlab("Marker genes")+
+  ylab("Cell Type")+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker)))+0.5)+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker)))+0.5)+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker)))+0.5)+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker)))+0.5)+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker)))+0.5)+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker)))+0.5)+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker,Macro_Marker,Mono_Marker)))+0.5)+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker,Macro_Marker,Mono_Marker,KC_Marker)))+0.5)+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker,Macro_Marker,Neutro_Marker)))+0.5)+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker,Macro_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker)))+0.5)+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker,Macro_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker,Endo_Marker)))+0.5)+
+  geom_hline(yintercept=10.4)
+  
+print(p)
+ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_DotPlot_Canonical_Markers.png"), p,width = 18, height = 3, dpi = 800,bg="transparent")
+
+
+
+
+
+#### Test some potential interesting marker stuff #####
 Idents(NPC_ALL_TRANSFORMED) <- "celltype.stim"
 Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting2)
 VlnPlot(NPC_ALL_TRANSFORMED,features = c("Col1a2"),assay = "RNA")
-Cytokines_and_Stuff <-c("Lyve1","Flt4","Efnb2","Ephb4","Icam1","Selp","F3",
-  "Itgax","Cd163","Msr1","Mrc1","Vegfa","Maf","Cxcl9","Cxcl10","Cxcl11","Stat6","Socs1",
-  "Cxcl1","Il6","Il10","Tgfb1","Ifng","Cxcr6","Il2","Saa1","Saa2","Cd40",
-                        "Cd28","Cd86","Stat3","Socs3","Gzma","Gzmb","Prf1","Il4","Cxcl15","Ccl2","Tnf",
-                        "Runx3","Cd8a","Cd4","Cd3e","Il21","Il23a","Il17a","Il17f","Il22","Rorc","Rora","Tbx21","Gata3","Foxp3","Il2ra","Eomes","Il1b","Ifng","Il12a",
-  "Col1a2","Col3a1","Fgg","Fga","Fgb","Fbln5","Apoa1","Fabp1","Gnmt","Selenbp2")
+
 p<-DotPlot(NPC_ALL_TRANSFORMED,  assay = "RNA", features =unique(Cytokines_and_Stuff),cols=c("pink","green"))+
   RotatedAxis()+
   scale_size(breaks = c(0, 25, 50, 75, 100),range(0,10))+
@@ -95,9 +182,7 @@ p<-DotPlot(NPC_ALL_TRANSFORMED,  assay = "RNA", features =unique(Cytokines_and_S
 print(p)
 ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_DotPlot_Cytokines Test.png"), p,width = 12, height = 3, dpi = 800,bg="transparent")
 
-#saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
-######################## Find Conserved Markers inClusters across Stimulation ########
-#NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
+######################## Find Conserved Markers in Clusters across Stimulation ########
 Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.main"
 Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting)
 
@@ -125,11 +210,10 @@ ConservedMarkers5<- read.csv(paste0("./99_other/2_Clustering/ConservedMarkers_To
 ConservedMarkers10 <-read.csv(paste0("./99_other/2_Clustering/ConservedMarkers_Top10.csv"))
 ConservedMarkers20 <-read.csv(paste0("./99_other/2_Clustering/ConservedMarkers_Top20.csv"))
 
-ConservedMarkers1<-c("Cd3e","Gzma","Cd79a","Clec4f","Ank2","Havcr2","S100a8","Col3a1","Ptprb","Spp1")
+ConservedMarkers1<-c("Cd3e","Gzma","Cd79a","Clec4f","Ank2","Havcr2","S100a8","Col3a1","Ptprb","Alb","Saa1")
 ConservedMarkers5<-ConservedMarkers5[order(factor(ConservedMarkers5$cluster, levels=myClusterSorting)),]                        
 ConservedMarkers10<-ConservedMarkers10[order(factor(ConservedMarkers10$cluster, levels=myClusterSorting)),]
 ConservedMarkers20<-ConservedMarkers20[order(factor(ConservedMarkers20$cluster, levels=myClusterSorting)),]
-###### Find Conserved Markes with Celltypes per Stim ######
 
 #### Do HeatMap of Marker 5 Marker genes per Clusters ####
 p<-DoHeatmap(NPC_ALL_TRANSFORMED, assay = "RNA", slot = "scale.data", features = c("Ptprc",ConservedMarkers5$gene),
@@ -144,6 +228,7 @@ p<-DoHeatmap(NPC_ALL_TRANSFORMED, assay = "RNA", slot = "scale.data", features =
         legend.text = element_text(size=6))
 print(p)
 ggsave( filename = paste0("./03_plots/2_Clustering/Clustermarker5_HeatMap.png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
+
 #### Do HeatMap of Marker 10 Marker genes per Clusters ####
 p<-DoHeatmap(NPC_ALL_TRANSFORMED, assay = "RNA", slot = "scale.data",features = c("Ptprc",ConservedMarkers10$gene),
              draw.lines = T,lines.width = NULL, label = F, group.bar =T)+
@@ -170,6 +255,7 @@ p<-DoHeatmap(NPC_ALL_TRANSFORMED, assay = "RNA",slot = "scale.data", features = 
         legend.text = element_text(size=4))
 print(p)
 ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker20_HeatMap.png"), p,width = 3.25, height = 3.25,dpi = 1200, bg="transparent")
+
 #### Do DotPLot(BubblePlot) of 5 Marker genes per Clusters ####
 p<-DotPlot(NPC_ALL_TRANSFORMED,  assay = "RNA",features =unique(ConservedMarkers5$gene))+
   RotatedAxis()+
@@ -224,6 +310,7 @@ p<-VlnPlot(NPC_ALL_TRANSFORMED, features = ConservedMarkers1, assay= "RNA", laye
 print(p)
 ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_VlnPlot1.png"), p,width = 8, height = 4, dpi = 800,bg="transparent")
 
+#### Do Stacked VlnPlot of 5 Marker per Cluster
 DefaultAssay(NPC_ALL_TRANSFORMED) <-"RNA"
 for (c in unique(NPC_ALL_TRANSFORMED$mouseRNA.main)){
   mm <- ConservedMarkers5%>%filter(cluster == c)
@@ -235,7 +322,7 @@ ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_VlnPlot",c,".png
 }
 
 #### Try to get Markers from Panglao DB to have independet clustermakers to proove my clusters
-#Code from inerent to get human geens to mouse gene conversion
+#Code from interent to get human geens to mouse gene conversion
 mouse_human_genes <- read.csv("http://www.informatics.jax.org/downloads/reports/HOM_MouseHumanSequence.rpt",sep="\t")
 # separate human and mouse 
 mouse <- split.data.frame(mouse_human_genes,mouse_human_genes$Common.Organism.Name)[[2]]
@@ -298,7 +385,7 @@ for(c in unique(PanglaoMarkers$cell.type)){
                draw.lines = T,lines.width = NULL,
                label = F, group.bar =T)+
     scale_fill_viridis_c()+
-    theme(axis.text.y.left = element_text(size = 6),
+    theme(axis.text.y.left = element_text(size = 4),
           legend.justification = "top", 
           legend.title = element_text(size=6),
           legend.key.height= unit(0.2, 'cm'), 
@@ -310,103 +397,6 @@ for(c in unique(PanglaoMarkers$cell.type)){
 }
 ##### Panglao Markers kinda specific but also not. need to have good metrics to select genes to represent "Canonical Cluster Markers"#
 
-  
-################### Below IS STILL CHAOS ################################
-
-########################## Identify differentially expressed Genes in Clusters across Conditions Enhanced Volcano ############################
-#Add "celltype.stim" to meta data and PrepSCT FIndMarkers----
-Idents(NPC_ALL_TRANSFORMED) <- "celltype.stim"
-NPC_ALL_TRANSFORMED <- PrepSCTFindMarkers(NPC_ALL_TRANSFORMED)
-a<-unique(NPC_ALL_TRANSFORMED@meta.data$mouseRNA.main)
-y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
-for (c in a){
-  single_l.de <-FindMarkers(NPC_ALL_TRANSFORMED, assay = NULL, ident.2 = paste0(c,"_EtOH"), ident.1 = paste0(c,"_TAM"), 
-                            verbose = T, recorrect_umi = FALSE, min.cells.feature = 3, min.pct= 0.2,
-                            test.use="wilcox_limma")
-  single_M.de <-FindMarkers(NPC_ALL_TRANSFORMED, assay = NULL, ident.2 = paste0(c,"_EtOH"), ident.1 = paste0(c,"_TAM"), 
-                            verbose = T,recorrect_umi = FALSE, min.cells.feature = 3, min.pct= 0.2,
-                            test.use="MAST")
-  write.csv(single_l.de,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single_limma",c,".csv"))
-  write.csv(single_M.de,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single_MAST",c,".csv"))
-  names(single_l.de) <- paste0(names(single_l.de), "_l.sc")
-  single_l.de$gene <- rownames(single_l.de)
-  names(single_M.de) <- paste0(names(single_M.de), "_M.sc")
-  single_M.de$gene <- rownames(single_M.de)
-  merge_dat <- merge(single_M.de, single_l.de,by = "gene")
-  merge_dat <- merge_dat[order(merge_dat$p_val_M.sc), ]
-  # Number of genes that are marginally significant in both; marginally significant only in bulk; and marginally significant only in single-cell
-  common <- merge_dat$gene[which(merge_dat$p_val_l.sc < 0.05&
-                                   merge_dat$p_val_M.sc < 0.05)]
-  write.csv(common,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_Common",c,".csv"))
-  only_sc_l <- merge_dat$gene[which(merge_dat$p_val_M.sc > 0.05 &
-                                      merge_dat$p_val_l.sc < 0.05)]
-  write.csv(only_sc_l,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_Only_Limma",c,".csv"))
-  
-  only_sc_M <- merge_dat$gene[which(  merge_dat$p_val_l.sc > 0.05 &
-                                        merge_dat$p_val_M.sc < 0.05)]
-  write.csv(only_sc_M,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_Only_MAST",c,".csv"))
-  
-  }
-
-MAST<-read.csv("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single_MASTT cells.csv")
-MAST<-MAST%>%mutate(pct.diff=(pct.1-pct.2))%>%arrange(desc(avg_log2FC),desc(pct.1))
-p<-DoHeatmap(subset(NPC_ALL_TRANSFORMED, mouseRNA.main=="T cells"), assay = "RNA",slot = "scale.data", features = c(unique(MAST$X[10:100])),
-             draw.lines = T,lines.width = NULL,
-             label = F, group.bar =T)+
-  scale_fill_viridis_c()+
-  theme(axis.text.y.left = element_text(size = 6),
-        legend.justification = "top", 
-        legend.title = element_text(size=6),
-        legend.key.height= unit(0.2, 'cm'), 
-        legend.key.width= unit(0.1, 'cm'),
-        legend.text = element_text(size=4))
-print(p)
-
-
-
-p<-DotPlot(subset(NPC_ALL_TRANSFORMED, mouseRNA.main=="T cells"),  assay = "RNA",scale=F,features =c(unique(MAST$X[1:50])))+
-  RotatedAxis()+
-  scale_size(breaks = c(0, 25, 50, 75, 100),range(0,10))+
-  scale_colour_distiller(palette="Blues", trans="reverse")+
-  guides(colour = guide_colourbar(reverse = TRUE))+
-  theme(panel.background = element_rect(fill = "red",colour="black", linewidth = 1),
-        axis.line.y.left =element_blank(),
-        axis.title.x = element_text(size = 10),
-        axis.title.y = element_text(size = 10),
-        axis.text.y.left = element_text(size = 8),
-        axis.text.x.bottom = element_text(size = 8),
-        legend.justification = "top", 
-        legend.key.height= unit(0.4, 'cm'), 
-        legend.key.width= unit(0.2, 'cm'),
-        legend.title = element_text(size=8),
-        legend.text = element_text(size=7),
-        axis.line.x.bottom =element_blank(),
-        axis.text.x =element_text(angle = 90,vjust = 0.5))+
-  xlab("Marker genes")+
-  ylab("Cell Type")
-print(p)
-
-
-
-
-
-
-
-
-
-png(paste0("./03_plots/3_DEG_Analysis_MainCluster/EnhancedVolcano_Single_Limma",c,".png"))
-p<-  EnhancedVolcano(single_l.de,lab = rownames(single_l.de), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj", pCutoff = 1e-05, FCcutoff = 1.0 ,
-                     title = paste0("DE ",c," TAM vs EtOH"), 
-                     caption = 'FC cutoff, 1.0; p-value cutoff: p_val_adj<1e-05')
-print(p)
-dev.off()
-png(paste0("./03_plots/3_DEG_Analysis_MainCluster/EnhancedVolcano_Single_MAST",c,".png"))
-p<-  EnhancedVolcano(MAST,lab = MAST$X, x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj", pCutoff = 0.05, FCcutoff = 0.5 ,
-                     title = paste0("DE ",c," TAM vs EtOH"), 
-                     caption = 'FC cutoff, 0.5; p-value cutoff: p_val_adj<1e-05')
-print(p)
-dev.off()
-print(paste0("I just saved Enhanced Volcano of singeDE Analysis of ",c,"."))
 
 ##################### Plotting Things ####
 #NPC_ALL_TRANSFORMED <- SetIdent(NPC_ALL_TRANSFORMED, value = "mouseRNA.fine")

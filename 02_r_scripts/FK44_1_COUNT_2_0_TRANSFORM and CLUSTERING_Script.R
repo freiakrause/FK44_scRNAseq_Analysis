@@ -179,9 +179,9 @@ dev.off()
 
 
 #rm(NPC, NPC.anchors, NPC_list)
-#saveRDS(NPC_ALL_TRANSFORMED, "./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
+saveRDS(NPC_ALL_TRANSFORMED, "./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
 #rm(NPC_ALL_TRANSFORMED)
-#NPC<-readRDS("./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
+#NPC_ALL_TRANSFORMED<-readRDS("./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
 DefaultAssay(NPC_ALL_TRANSFORMED) <- "integrated"
 p1 <- DimPlot(NPC_ALL_TRANSFORMED, group.by = "sample")
 plot(p1)
@@ -205,13 +205,28 @@ mouseRNA.main <- SingleR(test = sce,assay.type.test = 1,ref = mouseRNA.ref,label
 mouseRNA.fine <- SingleR(test = sce,assay.type.test = 1,ref = mouseRNA.ref,labels = mouseRNA.ref$label.fine)
 NPC_ALL_TRANSFORMED@meta.data$mouseRNA.main <- mouseRNA.main$pruned.labels
 NPC_ALL_TRANSFORMED@meta.data$mouseRNA.fine <- mouseRNA.fine$pruned.labels
+#Add colums for celltype_stim and celltype_sex for potential future analysis
+NPC_ALL_TRANSFORMED$celltype.stim <- paste(NPC_ALL_TRANSFORMED$mouseRNA.main, NPC_ALL_TRANSFORMED$stim, sep = "_")
+NPC_ALL_TRANSFORMED$celltype.sex <- paste(NPC_ALL_TRANSFORMED$mouseRNA.main, NPC_ALL_TRANSFORMED$sex, sep = "_")
 rm(mouseRNA.fine, mouseRNA.main, mouseRNA.ref, sce)
 x<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main)%>%summarise(n=n())
 ################### Save the SCT Transformed Seurat Object with Annotations############
-#saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
+saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated.rds")
 ################## Load SC Transformed Seurat Object with Annotations ###############
-#NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
+#NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated.rds")
 y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
+NPC_ALL_TRANSFORMED<-subset(NPC_ALL_TRANSFORMED, 
+                            subset=mouseRNA.main!= "Adipocytes"& #bc only 2 0 vs 2
+                              mouseRNA.main!= "Epithelial cells"& #bc only 4 4vs0
+                              mouseRNA.main!= "Dendritic cells"& #bc only 17 9vs 8
+                              mouseRNA.main!= "Erythrocytes"& #bc only 16 4 vs 12
+                              (malat1_threshold=="TRUE" | mouseRNA.main=="Hepatocytes")) #substracts empty droplets/cells wo nucleus, but not for heps bc heps always look like sh*?$%$t
+z<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
+saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds")
+#NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds")
+
+
+#### Vizuals Malat1 Filter ###
 Idents(NPC_ALL_TRANSFORMED)<-"mouseRNA.main"
 png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_RidgePlot_ALLTransformed_mouseRNAMain.png"))
 RidgePlot(NPC_ALL_TRANSFORMED, features = "Malat1")
@@ -222,13 +237,7 @@ dev.off()
 png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_VlnPLot_ALLTranformed_mouseRNAMain.png"))
 VlnPlot(NPC_ALL_TRANSFORMED,features = "Malat1")
 dev.off()
-NPC_ALL_TRANSFORMED<-subset(NPC_ALL_TRANSFORMED, 
-                            subset=mouseRNA.main!= "Adipocytes"& #bc only 2 0 vs 2
-                              mouseRNA.main!= "Epithelial cells"& #bc only 4 4vs0
-                              mouseRNA.main!= "Dendritic cells"& #bc only 17 9vs 8
-                              mouseRNA.main!= "Erythrocytes"& #bc only 16 4 vs 12
-                              (malat1_threshold=="TRUE" | mouseRNA.main=="Hepatocytes")) #substracts empty droplets/cells wo nucleus, but not for heps bc heps always look like sh*?$%$t
-z<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
+
 png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_RidgePlot_ALLTransformed_mouseRNAMain_after_MALAT1_and_Number.png"))
 RidgePlot(NPC_ALL_TRANSFORMED, features = "Malat1")
 dev.off()
@@ -277,7 +286,7 @@ DimPlot(NPC_ALL_TRANSFORMED, label = F, repel = T, group.by = "sample") + ggtitl
 dev.off()
 
 NPC_ALL_TRANSFORMED <- SetIdent(NPC_ALL_TRANSFORMED, value = "stim")
-png("./03_plots/Clustering_3_QC6_CR1_Stim.png")
+png("./03_plots/2_Clustering/Clustering_3_QC6_CR1_Stim.png")
 DimPlot(NPC_ALL_TRANSFORMED, label = F , group.by = "stim",repel = T, label.size = 3)+ ggtitle("Stimulation")
 dev.off()
 
