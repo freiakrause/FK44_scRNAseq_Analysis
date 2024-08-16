@@ -21,6 +21,7 @@
 #renv::install("gprofiler2")
 #renv::install("DESeq2")
 #renv::install("MAST")
+
 #BiocManager::install(version = "3.18")
 #BiocManager::install("SingleR")
 #BiocManager::install("celldex")
@@ -31,11 +32,13 @@
 
 #remotes::install_github("Moonerss/scrubletR")
 #remotes::install_github('immunogenomics/presto')
+#remotes::install_github("ianmoran11/mmtable2")
 
 ################################# Load Libraries #########################################################
 library(Seurat)
 library(ggplot2)
 library(SingleR)
+library(tidyr)
 library(dplyr)
 library(celldex)
 library(RColorBrewer)
@@ -45,6 +48,8 @@ library(gprofiler2)
 library(patchwork)
 library(EnhancedVolcano)
 library(readr)
+library(mmtable2)
+library(gt)
 source("02_r_scripts/malat1_function.R")
 source("02_r_scripts/VlnPlot_Function.R") 
 set.seed(42)
@@ -59,9 +64,9 @@ NPC_ALL_TRANSFORMED <- PrepSCTFindMarkers(NPC_ALL_TRANSFORMED)
 #NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
 
 #### Define Cluster Sorting
-myClusterSorting <-c("T cells","NK cells","B cells","Macrophages","Microglia","Monocytes","Granulocytes","Fibroblasts","Endothelial cells","Hepatocytes")
+myClusterSorting <-c("T cells","NK cells","B cells","Macrophages","Monocytes","Granulocytes","Fibroblasts","Endothelial cells","Hepatocytes")
 myClusterSorting2 <-c("T cells_EtOH","T cells_TAM","NK cells_EtOH","NK cells_TAM","B cells_EtOH","B cells_TAM","Macrophages_EtOH","Macrophages_TAM",
-                      "Microglia_EtOH","Microglia_TAM","Monocytes_EtOH","Monocytes_TAM","Granulocytes_EtOH","Granulocytes_TAM",
+                      "Monocytes_EtOH","Monocytes_TAM","Granulocytes_EtOH","Granulocytes_TAM",
                       "Fibroblasts_EtOH","Fibroblasts_TAM","Endothelial cells_EtOH","Endothelial cells_TAM","Hepatocytes_EtOH","Hepatocytes_TAM")
 #### Define some interesting geens (manually)
 Cytokines_and_Stuff <-c("Lyve1","Flt4","Efnb2","Ephb4","Icam1","Selp","F3",
@@ -71,22 +76,22 @@ Cytokines_and_Stuff <-c("Lyve1","Flt4","Efnb2","Ephb4","Icam1","Selp","F3",
                         "Runx3","Cd8a","Cd4","Cd3e","Il21","Il23a","Il17a","Il17f","Il22","Rorc","Rora","Tbx21","Gata3","Foxp3","Il2ra","Eomes","Il1b","Ifng","Il12a",
                         "Col1a2","Col3a1","Fgg","Fga","Fgb","Fbln5","Apoa1","Fabp1","Gnmt","Selenbp2")
 Leukocyte_Marker <-c("Ptprc","Cd52")#alle noch nicht überprüft
-Lymphocyte_Marker <-c()#alle noch nicht überprüft #"Ltb"
 T_Marker <-c("Cd4","Cd8a","Il7r","Cd3d","Cd3e","Cd3g","Lat", "Lck")
-NK_Marker <-c("Ccl5","Nkg7","Gzmb","Gzma","Ncr1","Prf1","Ccl4","Itgax","Ccl3")
+NK_Marker <-c("Ccl5","Nkg7","Gzmb","Gzma","Ncr1","Prf1","Ccl4","Ccl3")
 B_Marker <-c("Cd19","Cd79a","Ighm","Ighd","Fcmr","Ly6d","Ebf1","Ms4a1")#,"Cd86"
 myeloid_Marker <-c("Itgax","Cd14","Fcgr3","Itgam")
-KC_Marker <-c("Clec4f","C1qc","C1qa","C1qb","Csf1r","Adgre1","Cd14","Cd163","Clec1b")
 Macro_Marker <-c("Cd74","Cyth4","Lyz2","Csf1r","Cd68","Aif1","Cybb","Ccl6")
-Micro_Marker <-c()
-Mono_Marker <-c()
-Neutro_Marker <-c("Cd14","Mmp8","Mmp9","Ly6g","Hdc","Il1r2","Ccr1") #,"Hp","Lcn2"
+KC_Marker <-c("Clec4f","C1qc","C1qa","C1qb","Cd163","Clec1b","Adgre1")
+Mono_Marker <-c("Ly6c1","Ccr2","Itga2","Sell","Cx3cr1","Clec7a","Ifitm2","Cxcr4")
+Neutro_Marker <-c("Mmp8","Mmp9","Ly6g","Hdc","Il1r2","Ccr1") #,"Hp","Lcn2"
 Fibro_Marker <-c("Gsn","Egr1","Col6a2","Fstl1","Dcn","Mmp2","Lum")
 HSC_Marker <-c("Col1a1","Col1a2","Col3a1","Igfbp3","Igfbp7","Bgn")
 Endo_Marker <-c("Id3","Ptprb","Pecam1","Egfl7","Gng11","Flt1","Cldn5","Adgrf5","Eng")
 Hep_Marker <-c("Ass1","Orm1","Apoa1","Apoa2","Alb","Aldh6a1","Ambp")
-Canonical_ClusterMarker <-unique(c(Leukocyte_Marker, Lymphocyte_Marker,T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker, Macro_Marker, Micro_Marker, Mono_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker,Endo_Marker,Hep_Marker))
+Canonical_ClusterMarker <-unique(c(Leukocyte_Marker,T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker, KC_Marker,Mono_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker,Endo_Marker,Hep_Marker))
 #### Do HeatMap of manually assigned Canonical Markers ####
+Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.main"
+Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting)
 p<-DoHeatmap(NPC_ALL_TRANSFORMED, assay = "RNA",slot = "scale.data", features = Canonical_ClusterMarker,
              draw.lines = T,lines.width = NULL,
              label = F, group.bar =T)+
@@ -106,18 +111,19 @@ p<-DotPlot(NPC_ALL_TRANSFORMED,  assay = "RNA", scale= T, features =unique(Canon
   RotatedAxis()+
   scale_size(breaks = c(0, 25, 50, 75, 100),range(0,10))+
   scale_colour_distiller(palette="Blues", trans="reverse")+
-  coord_cartesian( ylim=c(0,10.5),clip = "off")+
-  annotate("text", y = 10.7, x = 0.5+length(unique(c(Leukocyte_Marker, Lymphocyte_Marker)))/2, label = "L", size=4)+
-  annotate("text", y = 10.7, x = 0.5+(length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker)))-length(T_Marker)/2), label = "T",size=4)+
-  annotate("text", y = 10.7, x = 0.5+(length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker)))-length(NK_Marker)/2), label = "NK",size=4)+
-  annotate("text", y = 10.7, x = 0.5+(length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker)))-length(B_Marker)/2), label = "B",size=4)+
-  annotate("text", y = 10.7, x = 0.5+(length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker)))-length(myeloid_Marker)/2), label = "Mye",size=4)+
-  annotate("text", y = 10.7, x = 0.5+(length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker)))-length(KC_Marker)/2), label = "KC",size=4)+
-  annotate("text", y = 10.7, x = 0.5+(length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker,Macro_Marker)))-length(Macro_Marker)/2), label = "Macro",size=4)+
-  annotate("text", y = 10.7, x = 0.5+(length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker,Macro_Marker,Micro_Marker,Mono_Marker,Neutro_Marker)))-length(Neutro_Marker)/2), label = "N",size=4)+
-  annotate("text", y = 10.7, x = 0.5+(length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker,Macro_Marker,Micro_Marker,Mono_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker)))-(length(HSC_Marker)+length(Fibro_Marker))/2), label = "Fibro & HSC",size=4)+
-  annotate("text", y = 10.7, x = 0.5+(length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker,Macro_Marker,Micro_Marker,Mono_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker,Endo_Marker)))-length(Endo_Marker)/2), label = "Endo",size=4)+
-  annotate("text", y = 10.7, x = 0.5+(length(unique(Canonical_ClusterMarker))-length(Hep_Marker)/2), label = "Hep",size=4)+
+  coord_cartesian( ylim=c(0,9.5),clip = "off")+
+  annotate("text", y = 9.75, x = 0.5+length(unique(c(Leukocyte_Marker)))/2, label = "L", size=4)+
+  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker)))-length(T_Marker)/2), label = "T",size=4)+
+  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker)))-length(NK_Marker)/2), label = "NK",size=4)+
+  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker)))-length(B_Marker)/2), label = "B",size=4)+
+  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker)))-length(myeloid_Marker)/2), label = "Mye",size=4)+
+  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker)))-length(Macro_Marker)/2), label = "Macro",size=4)+
+  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker)))-length(KC_Marker)/2), label = "KC",size=4)+
+  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker, Mono_Marker)))-length(Mono_Marker)/2), label = "Mono",size=4)+
+  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker,Mono_Marker,Neutro_Marker)))-length(Neutro_Marker)/2), label = "N",size=4)+
+  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker,Mono_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker)))-(length(HSC_Marker)+length(Fibro_Marker))/2), label = "Fibro & HSC",size=4)+
+  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker,Mono_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker,Endo_Marker)))-length(Endo_Marker)/2), label = "Endo",size=4)+
+  annotate("text", y = 9.75, x = 0.5+(length(unique(Canonical_ClusterMarker))-length(Hep_Marker)/2), label = "Hep",size=4)+
   guides(colour = guide_colourbar(reverse = TRUE))+
   theme(panel.background = element_rect(fill = "gray95", linewidth = 0.8,color = "black"),
         axis.line.y.left =element_blank(),
@@ -132,23 +138,23 @@ p<-DotPlot(NPC_ALL_TRANSFORMED,  assay = "RNA", scale= T, features =unique(Canon
         legend.text = element_text(size=7),
         axis.line.x.bottom =element_blank(),
         axis.text.x.top =element_text(angle =0,vjust = 0.5))+
-  xlab("Marker genes")+
-  ylab("Cell Type")+
-  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker)))+0.5)+
-  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker)))+0.5)+
-  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker)))+0.5)+
-  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker)))+0.5)+
-  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker)))+0.5)+
-  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker)))+0.5)+
-  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker,Macro_Marker,Mono_Marker)))+0.5)+
-  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker,Macro_Marker,Mono_Marker,KC_Marker)))+0.5)+
-  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker,Macro_Marker,Neutro_Marker)))+0.5)+
-  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker,Macro_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker)))+0.5)+
-  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, Lymphocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,KC_Marker,Macro_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker,Endo_Marker)))+0.5)+
-  geom_hline(yintercept=10.4)
+  xlab("Canonical marker genes")+
+  ylab("Cell type")+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker)))+0.5)+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, T_Marker)))+0.5)+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker)))+0.5)+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker)))+0.5)+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker)))+0.5)+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker)))+0.5)+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker)))+0.5)+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker,Mono_Marker)))+0.5)+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker,Mono_Marker,Neutro_Marker)))+0.5)+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker,Mono_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker)))+0.5)+
+  geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker,Mono_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker,Endo_Marker)))+0.5)+
+  geom_hline(yintercept=9.4)
   
 print(p)
-ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_DotPlot_Canonical_Markers.png"), p,width = 18, height = 3, dpi = 800,bg="transparent")
+ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_DotPlot_Canonical_Markers.png"), p,width = 18, height = 4, dpi = 600,bg="transparent")
 
 
 
@@ -396,6 +402,46 @@ for(c in unique(PanglaoMarkers$cell.type)){
   
 }
 ##### Panglao Markers kinda specific but also not. need to have good metrics to select genes to represent "Canonical Cluster Markers"#
+#### I looked at PanglaoMarkers and on top of this script I defined manually marker genes per cluster. Here I want to get the product descriptions for these defined markers
+CanoMarkers_Table<-PanglaoMarkers%>%ungroup()%>%filter(mouseGene %in% Canonical_ClusterMarker)%>%
+  select(mouseGene, official.gene.symbol, product.description,cell.type)%>%
+  arrange(factor(mouseGene,levels=Canonical_ClusterMarker))%>%
+filter(official.gene.symbol!="CD44" & official.gene.symbol!="CD40" & official.gene.symbol!="CD47" & official.gene.symbol!="CD48")%>%
+select(mouseGene,product.description,official.gene.symbol)%>%mutate(Reference= "1")%>%
+  rename( humanGene =official.gene.symbol,Protein = product.description)
+CanoMM<-list(Leukocytes=Leukocyte_Marker,
+             `T Cells`=T_Marker,
+             `NK Cells`=NK_Marker,
+             `B Cells`=B_Marker,
+             `myeloid Cells`=myeloid_Marker,
+             Macropahges=Macro_Marker,
+             `Kupffer Cells`=KC_Marker,
+             Monocytes=Mono_Marker,
+             Neutrophils=Neutro_Marker,
+             Fibroblasts=Fibro_Marker,
+             `Hepatic Stellate Cells`= HSC_Marker,
+             `Endothelial Cells`=Endo_Marker,
+             Hepatocytes= Hep_Marker)
+MarkerFrame <-data.frame()
+
+for (e in 1:length(CanoMM)){
+  print(e)
+ print(CanoMM[[e]])
+print(names(CanoMM[e])[1])
+x<-data.frame(mouseGene=CanoMM[[e]], Marker.for =names(CanoMM[e])[1])
+MarkerFrame <-rbind(MarkerFrame,x)
+}
+CanoMarkers_Table<-merge(MarkerFrame,CanoMarkers_Table, by = "mouseGene", all.x =T)%>%arrange(factor(mouseGene,levels=Canonical_ClusterMarker))%>%distinct(mouseGene,.keep_all = T)
+#### Generate nice table as output for canonical Markers
+CanoMarkers_Table%>%rename(`Murine Gene`=mouseGene,`Human Gene`=humanGene,`Marker for`=Marker.for)%>%
+  gt()%>%
+  tab_header(title = "Canonical Cluster Markers")%>%
+  tab_style(style = cell_text(color = "black", weight = "bold", align = "center"),locations = cells_title("title"))%>%
+  tab_style(style= cell_text(weight= "bold"),locations = cells_column_labels(everything()))%>%
+   opt_table_lines()%>%
+  tab_options(table.font.size="small")%>%
+  gtsave("Canonical_Markers_Table.docx",path="./03_plots/2_Clustering/")
+
 
 
 ##################### Plotting Things ####

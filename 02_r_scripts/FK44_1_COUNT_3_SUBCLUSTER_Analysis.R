@@ -66,7 +66,6 @@ for(a in animals){
   NPC <-subset(Tcells,idents = paste0("iAL",a))
   all.genes <- rownames(NPC)
   #generated clusters to check cellcycle scoring
-  #in older scrit I did this and then plotted results here i only do it and dont plot results
   NPC <- ScaleData(NPC, features = all.genes, verbose = T)
   NPC <- RunPCA(NPC, features = VariableFeatures(object = NPC), npcs = 50, verbose = F)
   p <-DimHeatmap(NPC, dims = 1:10, nfeatures = 20, cells = 500, balanced = T)
@@ -126,29 +125,34 @@ Tcells_integrated <- FindVariableFeatures(Tcells_integrated, selection.method = 
 all.genes <- rownames(Tcells_integrated)
 Tcells_integrated <- ScaleData(Tcells_integrated, features = all.genes)
 Tcells_integrated <-JoinLayers(Tcells_integrated)
-p <-VlnPlot(Tcells_integrated,features = "percent.mt") & theme(plot.title = element_text(size=10))
-print(p)
-ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_MtPerc.png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
-p <-VlnPlot(Tcells_integrated,features = c("nFeature_RNA")) & theme(plot.title = element_text(size=10))
-print(p)
-ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_FeatureRNA.png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
-p <-VlnPlot(Tcells_integrated,features = c("nCount_RNA")) & theme(plot.title = element_text(size=10))
-print(p)
-ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_CountRNA.png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
-p <-VlnPlot(Tcells_integrated,features = "G2M.Score") &   theme(plot.title = element_text(size=10))
-print(p)
-ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_G2Mscore.png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
-p <-VlnPlot(Tcells_integrated,features = "S.Score") &   theme(plot.title = element_text(size=10))
-print(p)
-ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_Sscore.png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
-p <-VlnPlot(Tcells_integrated,features = "percent.rb") &   theme(plot.title = element_text(size=10))
-print(p)
-ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_Rbperc_.png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
-#scaling, norm, UMAP and Clustering per ,mouse
-rm(Tcells, T.anchors, T_list)
-#saveRDS(Tcells_integrated, "./01_tidy_data/3_Subclustering_Tcells.rds")
+Tcells_integrated$clusters.stim <- paste(Tcells_integrated$seurat_clusters, Tcells_integrated$stim, sep = "_")
+DefaultAssay(Tcells_integrated) <-"SCT"
+Tcells_integrated <- PrepSCTFindMarkers(Tcells_integrated)
+rm(Tcells, T.anchors, T_list,NPC_ALL_TRANSFORMED)
+saveRDS(Tcells_integrated, "./01_tidy_data/3_Subclustering_Tcells.rds")
 #rm(Tcells_integrated)
 #Tcells_integrated<-readRDS("./01_tidy_data/3_Subclustering_Tcells.rds")
+#### Vizuals
+p <-VlnPlot(Tcells_integrated,features = "percent.mt") & theme(plot.title = element_text(size=10))
+print(p)
+ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_MtPerc.png"),  p,  width = 3.25,  height = 3.25,  dpi = 600,  bg="transparent"  )
+p <-VlnPlot(Tcells_integrated,features = c("nFeature_RNA")) & theme(plot.title = element_text(size=10))
+print(p)
+ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_FeatureRNA.png"),  p,  width = 3.25,  height = 3.25,  dpi = 600,  bg="transparent"  )
+p <-VlnPlot(Tcells_integrated,features = c("nCount_RNA")) & theme(plot.title = element_text(size=10))
+print(p)
+ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_CountRNA.png"),  p,  width = 3.25,  height = 3.25,  dpi = 600,  bg="transparent"  )
+p <-VlnPlot(Tcells_integrated,features = "G2M.Score") &   theme(plot.title = element_text(size=10))
+print(p)
+ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_G2Mscore.png"),  p,  width = 3.25,  height = 3.25,  dpi = 600,  bg="transparent"  )
+p <-VlnPlot(Tcells_integrated,features = "S.Score") &   theme(plot.title = element_text(size=10))
+print(p)
+ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_Sscore.png"),  p,  width = 3.25,  height = 3.25,  dpi = 600,  bg="transparent"  )
+p <-VlnPlot(Tcells_integrated,features = "percent.rb") &   theme(plot.title = element_text(size=10))
+print(p)
+ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_Rbperc_.png"),  p,  width = 3.25,  height = 3.25,  dpi = 600,  bg="transparent"  )
+#scaling, norm, UMAP and Clustering per ,mouse
+
 DefaultAssay(Tcells_integrated) <- "integrated"
 DimPlot(Tcells_integrated, group.by = "seurat_clusters")
 ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_DimPlot_SeuratClusters_.png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
@@ -160,21 +164,33 @@ DimPlot(Tcells_integrated, group.by = "sex")
 ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_DimPlot_Sex_.png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
 
 # #########################################################################
-DefaultAssay(Tcells_integrated) <-"SCT"
-Tcells_integrated <- PrepSCTFindMarkers(Tcells_integrated)
+
 #### Visualize manually assigned potential amrkers to identify tcells clusters
+#### Define Cluster Sorting
+
+#### Define some interesting geens (manually)
+Cytokines_and_Stuff <-c("Lyve1","Flt4","Efnb2","Ephb4","Icam1","Selp","F3",
+                        "Itgax","Cd163","Msr1","Mrc1","Vegfa","Maf","Cxcl9","Cxcl10","Cxcl11","Stat6","Socs1",
+                        "Cxcl1","Il6","Il10","Tgfb1","Ifng","Cxcr6","Il2","Saa1","Saa2","Cd40",
+                        "Cd28","Cd86","Stat3","Socs3","Gzma","Gzmb","Prf1","Il4","Cxcl15","Ccl2","Tnf",
+                        "Runx3","Cd8a","Cd4","Cd3e","Il21","Il23a","Il17a","Il17f","Il22","Rorc","Rora","Tbx21","Gata3","Foxp3","Il2ra","Eomes","Il1b","Ifng","Il12a")
 CD8Tcells1 <-c("Cd3e","Cd8a","Cd8b1","Tnf","Ifng","Il2","Cxcr3","Tbx21")
 CD8Tcells2 <-c("Cd3e","Cd8a","Cd8b1","Cd28","Il4","Il5","Ccr4","Gata3")
 CD8Tcells9 <-c("Cd3e","Cd8a","Cd8b1","Cd28","Il9","Il10","Irf4")
 CD8Tcells17 <-c("Cd3e","Cd8a","Cd8b1","Cd28","Ccr6","Klrb1","Il17a","Irf4","Rorc")
-#myTcellsSorting <-c("0","1","2","3","4","5","6","7")
+myTcellsSorting <-c("0","1","2","3","4","5","6","7")
+myTcellsSorting2 <-c("0_EtOH","0_TAM","1_EtOH","1_TAM","2_EtOH","2_TAM","3_EtOH","3_TAM","4_EtOH","4_TAM","5_EtOH","5_TAM","6_EtOH","6_TAM","7_EtOH","7_TAM")
+
 #Idents(Tcells_integrated) <-factor(Idents(Tcells_integrated),levels=myTcellsSorting)
 ### 
 TcellGenes <-c("Cd3e","Cd3d","Cd28","Cd4","Cd8a","Cd8b1","Foxp3","Il2ra","Stat5a","Ctla4","Il10","Tgfb1","Il6","Il10","Il17a","Il2")
 #Tcells2 from https://www.nature.com/articles/ncomms15081 might be interesting
 TcellGenes2<-c("Cst7","Gzma","Gzmb","Ifng","Nkg7","Prf1","Tnfsf10","Btla","Ctla4","Havcr2","Lag3","Pdcd1","Tigit","Il2ra","Il4ra","Il7","Tgfb1","Tgfb2","Tgfb3","Tgfbi","Ccr7","Lef1","Sell","Tcf7","Cd226","Icos","Slamf1","Tnfrsf14","Tnfrsf25","Tnfrsf9")
 ApoptosisGenes <-c("Bax","Fas","Bid","Bcl2","Psrc1","Ccng1","Sesn2","Eda2r","Pmaip1","Bbc3","Cdkn1a","Mdm2","Tnfrsf10b","Trp53","Rarg","Eme2","Jag2","Zmat3","Traf3","Phlda3","Sfn","Lhx3","Ifit3")
-p<-DoHeatmap(Tcells_integrated, assay = "RNA", slot = "scale.data", features = unique(c("Ptprc","Cd3e","Cd3d","Cd8a","Cd4","Cd28",TcellGenes2)),
+Idents(Tcells_integrated)<-"clusters.stim"
+Idents(Tcells_integrated)<-factor(Idents(Tcells_integrated),levels=myTcellsSorting2)
+
+p<-DoHeatmap(Tcells_integrated, assay = "RNA", slot = "scale.data", features = unique(Cytokines_and_Stuff),
              draw.lines = T,lines.width = NULL,
              label = F, group.bar =T)+
   scale_fill_viridis_c()+
@@ -186,6 +202,55 @@ p<-DoHeatmap(Tcells_integrated, assay = "RNA", slot = "scale.data", features = u
         legend.text = element_text(size=6))
 print(p)
 ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_HeatMap_ClusterMarker_Tcell2Genes.png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
+
+p<-DotPlot(Tcells_integrated,  assay = "RNA", scale= T, features =unique(Cytokines_and_Stuff))+
+  RotatedAxis()+
+  scale_size(breaks = c(0, 25, 50, 75, 100),range(0,14))+
+  scale_colour_distiller(palette="Blues", trans="reverse")+
+  coord_cartesian( ylim=c(0,16),clip = "off")+
+ # annotate("text", y = 9.75, x = 0.5+length(unique(c(Leukocyte_Marker)))/2, label = "L", size=4)+
+#  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker)))-length(T_Marker)/2), label = "T",size=4)+
+#  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker)))-length(NK_Marker)/2), label = "NK",size=4)+
+#  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker)))-length(B_Marker)/2), label = "B",size=4)+
+#  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker)))-length(myeloid_Marker)/2), label = "Mye",size=4)+
+#  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker)))-length(Macro_Marker)/2), label = "Macro",size=4)+
+#  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker)))-length(KC_Marker)/2), label = "KC",size=4)+
+ # annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker, Mono_Marker)))-length(Mono_Marker)/2), label = "Mono",size=4)+
+#  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker,Mono_Marker,Neutro_Marker)))-length(Neutro_Marker)/2), label = "N",size=4)+
+#  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker,Mono_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker)))-(length(HSC_Marker)+length(Fibro_Marker))/2), label = "Fibro & HSC",size=4)+
+#  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker,Mono_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker,Endo_Marker)))-length(Endo_Marker)/2), label = "Endo",size=4)+
+#  annotate("text", y = 9.75, x = 0.5+(length(unique(Canonical_ClusterMarker))-length(Hep_Marker)/2), label = "Hep",size=4)+
+  guides(colour = guide_colourbar(reverse = TRUE))+
+  theme(panel.background = element_rect(fill = "gray95", linewidth = 0.8,color = "black"),
+        axis.line.y.left =element_blank(),
+        axis.title.x = element_text(size = 10),
+        axis.title.y = element_text(size = 10),
+        axis.text.y.left = element_text(size = 9),
+        axis.text.x.bottom = element_text(size = 8, angle = 90,vjust = 0.5),
+        legend.justification = "top", 
+        legend.key.height= unit(0.4, 'cm'), 
+        legend.key.width= unit(0.2, 'cm'),
+        legend.title = element_text(size=8),
+        legend.text = element_text(size=7),
+        axis.line.x.bottom =element_blank(),
+        axis.text.x.top =element_text(angle =0,vjust = 0.5))+
+  xlab("Canonical marker genes")+
+  ylab("Cell type")
+  #geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker)))+0.5)+
+  #geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, T_Marker)))+0.5)+
+  #geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker)))+0.5)+
+  #geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker)))+0.5)+
+  #geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker)))+0.5)+
+  #geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker)))+0.5)+
+  #geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker)))+0.5)+
+  #geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker,Mono_Marker)))+0.5)+
+  #geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker,Mono_Marker,Neutro_Marker)))+0.5)+
+  #geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker,Mono_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker)))+0.5)+
+  #geom_vline(linetype= "dotted",xintercept=length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker,Mono_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker,Endo_Marker)))+0.5)+
+  #geom_hline(yintercept=9.4)
+print(p)
+
+
 #### Caclucalte Conseverd Markers
 TConservedMarkers20<-data.frame()
 

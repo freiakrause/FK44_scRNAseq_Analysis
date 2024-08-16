@@ -186,10 +186,6 @@ DefaultAssay(NPC_ALL_TRANSFORMED) <- "integrated"
 p1 <- DimPlot(NPC_ALL_TRANSFORMED, group.by = "sample")
 plot(p1)
 
-
-######################### Perform Transformation of Data Set ###############################################
-
-
 ########### Don't understand what I did here and why it was necessary #####################
 DefaultAssay(NPC_ALL_TRANSFORMED) <- "RNA"
 NPC_ALL_TRANSFORMED <- NormalizeData(NPC_ALL_TRANSFORMED)
@@ -199,12 +195,12 @@ NPC_ALL_TRANSFORMED <- ScaleData(NPC_ALL_TRANSFORMED, features = all.genes)
 NPC_ALL_TRANSFORMED <-JoinLayers(NPC_ALL_TRANSFORMED)
 ######## Annotate Clusters using cellDex #################################
 sce <- as.SingleCellExperiment(DietSeurat(NPC_ALL_TRANSFORMED))
-#sce
 mouseRNA.ref <- celldex::MouseRNAseqData()
 mouseRNA.main <- SingleR(test = sce,assay.type.test = 1,ref = mouseRNA.ref,labels = mouseRNA.ref$label.main)
 mouseRNA.fine <- SingleR(test = sce,assay.type.test = 1,ref = mouseRNA.ref,labels = mouseRNA.ref$label.fine)
 NPC_ALL_TRANSFORMED@meta.data$mouseRNA.main <- mouseRNA.main$pruned.labels
 NPC_ALL_TRANSFORMED@meta.data$mouseRNA.fine <- mouseRNA.fine$pruned.labels
+
 #Add colums for celltype_stim and celltype_sex for potential future analysis
 NPC_ALL_TRANSFORMED$celltype.stim <- paste(NPC_ALL_TRANSFORMED$mouseRNA.main, NPC_ALL_TRANSFORMED$stim, sep = "_")
 NPC_ALL_TRANSFORMED$celltype.sex <- paste(NPC_ALL_TRANSFORMED$mouseRNA.main, NPC_ALL_TRANSFORMED$sex, sep = "_")
@@ -215,16 +211,17 @@ saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annota
 ################## Load SC Transformed Seurat Object with Annotations ###############
 #NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated.rds")
 y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
+##### Throw out Cells/Cell Clusters, that are very low in number and cells that do not pass Malat1 Filter
 NPC_ALL_TRANSFORMED<-subset(NPC_ALL_TRANSFORMED, 
                             subset=mouseRNA.main!= "Adipocytes"& #bc only 2 0 vs 2
                               mouseRNA.main!= "Epithelial cells"& #bc only 4 4vs0
                               mouseRNA.main!= "Dendritic cells"& #bc only 17 9vs 8
                               mouseRNA.main!= "Erythrocytes"& #bc only 16 4 vs 12
-                              (malat1_threshold=="TRUE" | mouseRNA.main=="Hepatocytes")) #substracts empty droplets/cells wo nucleus, but not for heps bc heps always look like sh*?$%$t
+                              (malat1_threshold=="TRUE" | mouseRNA.main=="Hepatocytes"))         #substracts empty droplets/cells wo nucleus, but not for heps bc heps always look like sh*?$%$t
+NPC_ALL_TRANSFORMED$mouseRNA.main[grepl("Microglia", NPC_ALL_TRANSFORMED$mouseRNA.main)] <- "Macrophages"       # Mikroglia a brain marcos. i checked some of Conserved micro genes and they also fit kupffer cells, so i just merge these clusters here                      
 z<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
 saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds")
 #NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds")
-
 
 #### Vizuals Malat1 Filter ###
 Idents(NPC_ALL_TRANSFORMED)<-"mouseRNA.main"
@@ -247,7 +244,6 @@ dev.off()
 png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_VlnPLot_ALLTranformed_mouseRNAMain_MALAT1_and_Number.png"))
 VlnPlot(NPC_ALL_TRANSFORMED,features = "Malat1")
 dev.off()
-saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
 
 ############## Vizualise annotated Clusters ###################################
 #Vizualise Cluster No ----
