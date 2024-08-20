@@ -21,6 +21,9 @@
 #renv::install("gprofiler2")
 #renv::install("DESeq2")
 #renv::install("MAST")
+#renv::install("paletteer")
+#renv::install("ggsci")
+
 #BiocManager::install(version = "3.18")
 #BiocManager::install("SingleR")
 #BiocManager::install("celldex")
@@ -44,6 +47,10 @@ library(scrubletR)
 library(gprofiler2)
 library(patchwork)
 library(EnhancedVolcano)
+library(viridis)
+library(paletteer)
+library(ggsci)
+
 source("02_r_scripts/malat1_function.R")
 source("02_r_scripts/VlnPlot_Function.R")
 set.seed(42)
@@ -221,7 +228,7 @@ NPC_ALL_TRANSFORMED<-subset(NPC_ALL_TRANSFORMED,
 NPC_ALL_TRANSFORMED$mouseRNA.main[grepl("Microglia", NPC_ALL_TRANSFORMED$mouseRNA.main)] <- "Macrophages"       # Mikroglia a brain marcos. i checked some of Conserved micro genes and they also fit kupffer cells, so i just merge these clusters here                      
 z<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
 saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds")
-#NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds")
+NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds")
 
 #### Vizuals Malat1 Filter ###
 Idents(NPC_ALL_TRANSFORMED)<-"mouseRNA.main"
@@ -264,12 +271,23 @@ NPC_ALL_TRANSFORMED <- SetIdent(NPC_ALL_TRANSFORMED, value = "mouseRNA.fine")
 DimPlot(NPC_ALL_TRANSFORMED, label = F , repel = T, label.size = 3)
 dev.off()
 #Vizualise Cluster with Main Annoation----
-png("./03_plots/2_Clustering/Clustering_1_ClusterMouseMain_woLegend.png")
-DimPlot(NPC_ALL_TRANSFORMED, label = T, repel = T, group.by = "mouseRNA.main") + ggtitle("Annotation Main")+NoLegend()
-dev.off()
+
+p<-DimPlot(NPC_ALL_TRANSFORMED, 
+        label = T, 
+        label.size = 5,
+        repel = T, 
+        group.by = "mouseRNA.main",
+        pt.size = 1)+
+  NoLegend()+
+  scale_color_observable()
+ggsave(filename = paste0("./03_plots/2_Clustering/Clustering_1_ClusterMouseMain_woLegend.png"), p,width = 10, height = 10, dpi = 600)
+
+
 NPC_ALL_TRANSFORMED <- SetIdent(NPC_ALL_TRANSFORMED, value = "mouseRNA.main")
 png("./03_plots/2_Clustering/Clustering_1_ClusterMouseMain_wLegend.png")
-DimPlot(NPC_ALL_TRANSFORMED, label = F , repel = T, label.size = 3)
+DimPlot(NPC_ALL_TRANSFORMED, label = F , repel = T,group.by = "mouseRNA.main", label.size = 3)+
+  scale_color_paletteer_d("peRReo::planb")
+
 dev.off()
 #Vizualise Clusters with Annotation of Sex ----
 png("./03_plots/2_Clustering/Clustering_1_ClusterSex.png")

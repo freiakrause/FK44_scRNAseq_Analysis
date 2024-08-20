@@ -50,88 +50,90 @@ library(patchwork)
 library(svglite)
 library(HGNChelper)
 library(openxlsx)
+library(scran)
+library(enrichR)
 set.seed(42)
 
-NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
-############################### Create Subsets by Cluster #########################################
-####https://www.nature.com/articles/s41598-020-76972-9 : Article states that Celltype classification accuracy is low with low cell numbers. With T cell dataset they calim, you need ~2500 cells for good accuracy
-Idents(NPC_ALL_TRANSFORMED) <-"mouseRNA.main"
-Tcells <-subset(NPC_ALL_TRANSFORMED,idents = c("T cells", "NK cells"))
-Idents(Tcells)<-"sample"
-animals = c("87","88","91","92")
-DefaultAssay(Tcells)<-"RNA"
-T_list<-list()
-for(a in animals){
-  print(a)
-  NPC <-subset(Tcells,idents = paste0("iAL",a))
-  all.genes <- rownames(NPC)
-  #generated clusters to check cellcycle scoring
-  NPC <- ScaleData(NPC, features = all.genes, verbose = T)
-  NPC <- RunPCA(NPC, features = VariableFeatures(object = NPC), npcs = 50, verbose = F)
-  p <-DimHeatmap(NPC, dims = 1:10, nfeatures = 20, cells = 500, balanced = T)
-  print(p)
-  ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_DimHeatMap_iAL",a,".png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
-  p <-ElbowPlot(NPC)&labs(title = paste0("iAL",a," ElbowPLot PCA in T cell Subclusters"))
-  print(p)
-  ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_ElbowPlot_iAL",a,".png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
-  p <-DimPlot(NPC, reduction = "pca")&labs(title = paste0("iAL",a," DimPlot PCA T cell Subclusters"))
-  print(p)
-  ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_DimPlot_iAL",a,".png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
-  NPC <- RunUMAP(NPC, dims = 1:10, verbose = F, reduction = "pca")
-  NPC <- FindNeighbors(NPC, dims = 1:10, k.param = 10, verbose = T)
-  NPC <- FindClusters(NPC, resolution = 1, verbose =T)
-  p <-FeaturePlot(NPC,features = "percent.mt",label.size = 4,repel = T,label = T) +   theme(plot.title = element_text(size=5))
-  p <-VlnPlot(NPC,features = "percent.mt") & theme(plot.title = element_text(size=10))
-  print(p)
-  ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_MtPerc_iAL",a,".png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
-  p <-VlnPlot(NPC,features = c("nFeature_RNA")) & theme(plot.title = element_text(size=10))
-  print(p)
-  ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_FeatureRNA_iAL",a,".png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
-  p <-VlnPlot(NPC,features = c("nCount_RNA")) & theme(plot.title = element_text(size=10))
-  print(p)
-  ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_CountRNA_iAL",a,".png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
-  p <-VlnPlot(NPC,features = "G2M.Score") &   theme(plot.title = element_text(size=10))
-  print(p)
-  ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_G2Mscore_iAL",a,".png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
-  p <-VlnPlot(NPC,features = "S.Score") &   theme(plot.title = element_text(size=10))
-  print(p)
-  ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_Sscore_iAL",a,".png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
-  p <-VlnPlot(NPC,features = "percent.rb") &   theme(plot.title = element_text(size=10))
-  print(p)
-  ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_Rbperc_iAL",a,".png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
-  #scaling, norm, UMAP and Clustering per ,mouse
-  # SCTransfrom might be beneficial bc it gices better signal to noise ratio. regression is performed with Mt5 and cell cylce Scores bc they introduce unwanted variation
-  NPC <- SCTransform(NPC,  vst.flavor= "v2",method = "glmGamPoi",  verbose = F, vars.to.regress = c("percent.rb","percent.mt","S.Score","G2M.Score"))
-  print(paste0(" I did SCTransformation for NPC_",a,"."))
-  T_list<-append(T_list,NPC)
-}
-rm(NPC)
-features <-SelectIntegrationFeatures(object.list = T_list, nfeatures = 3000)
-T_list <- PrepSCTIntegration(object.list = T_list, anchor.features = features)
-T.anchors <- FindIntegrationAnchors(object.list = T_list, dims = 1:10, normalization.method = "SCT", anchor.features = features)
-Tcells_integrated <- IntegrateData(anchorset = T.anchors, dims = 1:10, normalization.method = "SCT")
-Tcells_integrated <- RunPCA(Tcells_integrated, verbose = F)
-p <-ElbowPlot(Tcells_integrated)&labs(title = paste0("ElbowPLot PCA in T cell Subclusters"))
-print(p)
-ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_ElbowPlot_FeatureRNA.png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
-
-Tcells_integrated <- RunUMAP(Tcells_integrated, dims = 1:30, verbose = F)
-Tcells_integrated <- FindNeighbors(Tcells_integrated, dims = 1:30, verbose = F)
-Tcells_integrated <- FindClusters(Tcells_integrated, verbose = F,resolution =1) 
-#Muss ich irgendiwe machen ,weil sonst verschiedne layer da sind? und dasnn kann zb Heatmap nicht arbeiten.
-DefaultAssay(Tcells_integrated) <- "RNA"
-Tcells_integrated <- NormalizeData(Tcells_integrated)
-Tcells_integrated <- FindVariableFeatures(Tcells_integrated, selection.method = "vst", nfeatures = 4000)
-all.genes <- rownames(Tcells_integrated)
-Tcells_integrated <- ScaleData(Tcells_integrated, features = all.genes)
-Tcells_integrated <-JoinLayers(Tcells_integrated)
-Tcells_integrated$clusters.stim <- paste(Tcells_integrated$seurat_clusters, Tcells_integrated$stim, sep = "_")
-DefaultAssay(Tcells_integrated) <-"SCT"
-Tcells_integrated <- PrepSCTFindMarkers(Tcells_integrated)
-rm(Tcells, T.anchors, T_list,NPC_ALL_TRANSFORMED)
-saveRDS(Tcells_integrated, "./01_tidy_data/3_Subclustering_Tcells.rds")
+# NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
+# ############################### Create Subsets by Cluster #########################################
+# ####https://www.nature.com/articles/s41598-020-76972-9 : Article states that Celltype classification accuracy is low with low cell numbers. With T cell dataset they calim, you need ~2500 cells for good accuracy
+# Idents(NPC_ALL_TRANSFORMED) <-"mouseRNA.main"
+# Tcells <-subset(NPC_ALL_TRANSFORMED,idents = c("T cells", "NK cells"))
+# Idents(Tcells)<-"sample"
+# animals = c("87","88","91","92")
+# DefaultAssay(Tcells)<-"RNA"
+# T_list<-list()
+# for(a in animals){
+#   print(a)
+#   NPC <-subset(Tcells,idents = paste0("iAL",a))
+#   all.genes <- rownames(NPC)
+#   #generated clusters to check cellcycle scoring
+#   NPC <- ScaleData(NPC, features = all.genes, verbose = T)
+#   NPC <- RunPCA(NPC, features = VariableFeatures(object = NPC), npcs = 50, verbose = F)
+#   p <-DimHeatmap(NPC, dims = 1:10, nfeatures = 20, cells = 500, balanced = T)
+#   print(p)
+#   ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_DimHeatMap_iAL",a,".png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
+#   p <-ElbowPlot(NPC)&labs(title = paste0("iAL",a," ElbowPLot PCA in T cell Subclusters"))
+#   print(p)
+#   ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_ElbowPlot_iAL",a,".png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
+#   p <-DimPlot(NPC, reduction = "pca")&labs(title = paste0("iAL",a," DimPlot PCA T cell Subclusters"))
+#   print(p)
+#   ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_DimPlot_iAL",a,".png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
+#   NPC <- RunUMAP(NPC, dims = 1:10, verbose = F, reduction = "pca")
+#   NPC <- FindNeighbors(NPC, dims = 1:10, k.param = 10, verbose = T)
+#   NPC <- FindClusters(NPC, resolution = 1, verbose =T)
+#   p <-FeaturePlot(NPC,features = "percent.mt",label.size = 4,repel = T,label = T) +   theme(plot.title = element_text(size=5))
+#   p <-VlnPlot(NPC,features = "percent.mt") & theme(plot.title = element_text(size=10))
+#   print(p)
+#   ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_MtPerc_iAL",a,".png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
+#   p <-VlnPlot(NPC,features = c("nFeature_RNA")) & theme(plot.title = element_text(size=10))
+#   print(p)
+#   ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_FeatureRNA_iAL",a,".png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
+#   p <-VlnPlot(NPC,features = c("nCount_RNA")) & theme(plot.title = element_text(size=10))
+#   print(p)
+#   ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_CountRNA_iAL",a,".png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
+#   p <-VlnPlot(NPC,features = "G2M.Score") &   theme(plot.title = element_text(size=10))
+#   print(p)
+#   ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_G2Mscore_iAL",a,".png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
+#   p <-VlnPlot(NPC,features = "S.Score") &   theme(plot.title = element_text(size=10))
+#   print(p)
+#   ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_Sscore_iAL",a,".png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
+#   p <-VlnPlot(NPC,features = "percent.rb") &   theme(plot.title = element_text(size=10))
+#   print(p)
+#   ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_VlnPlot_Rbperc_iAL",a,".png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
+#   #scaling, norm, UMAP and Clustering per ,mouse
+#   # SCTransfrom might be beneficial bc it gices better signal to noise ratio. regression is performed with Mt5 and cell cylce Scores bc they introduce unwanted variation
+#   NPC <- SCTransform(NPC,  vst.flavor= "v2",method = "glmGamPoi",  verbose = F, vars.to.regress = c("percent.rb","percent.mt","S.Score","G2M.Score"))
+#   print(paste0(" I did SCTransformation for NPC_",a,"."))
+#   T_list<-append(T_list,NPC)
+# }
+# rm(NPC)
+# features <-SelectIntegrationFeatures(object.list = T_list, nfeatures = 3000)
+# T_list <- PrepSCTIntegration(object.list = T_list, anchor.features = features)
+# T.anchors <- FindIntegrationAnchors(object.list = T_list, dims = 1:10, normalization.method = "SCT", anchor.features = features)
+# Tcells_integrated <- IntegrateData(anchorset = T.anchors, dims = 1:10, normalization.method = "SCT")
+# Tcells_integrated <- RunPCA(Tcells_integrated, verbose = F)
+# p <-ElbowPlot(Tcells_integrated)&labs(title = paste0("ElbowPLot PCA in T cell Subclusters"))
+# print(p)
+# ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_ElbowPlot_FeatureRNA.png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
+# 
+# Tcells_integrated <- RunUMAP(Tcells_integrated, dims = 1:30, verbose = F)
+# Tcells_integrated <- FindNeighbors(Tcells_integrated, dims = 1:30, verbose = F)
+# Tcells_integrated <- FindClusters(Tcells_integrated, verbose = F,resolution =1) 
+# #Muss ich irgendiwe machen ,weil sonst verschiedne layer da sind? und dasnn kann zb Heatmap nicht arbeiten.
+# DefaultAssay(Tcells_integrated) <- "RNA"
+# Tcells_integrated <- NormalizeData(Tcells_integrated)
+# Tcells_integrated <- FindVariableFeatures(Tcells_integrated, selection.method = "vst", nfeatures = 4000)
+# all.genes <- rownames(Tcells_integrated)
+# Tcells_integrated <- ScaleData(Tcells_integrated, features = all.genes)
+# Tcells_integrated <-JoinLayers(Tcells_integrated)
+# Tcells_integrated$clusters.stim <- paste(Tcells_integrated$seurat_clusters, Tcells_integrated$stim, sep = "_")
+# DefaultAssay(Tcells_integrated) <-"SCT"
+# Tcells_integrated <- PrepSCTFindMarkers(Tcells_integrated)
+# rm(Tcells, T.anchors, T_list,NPC_ALL_TRANSFORMED)
+#saveRDS(Tcells_integrated, "./01_tidy_data/3_Subclustering_Tcells.rds")
 #rm(Tcells_integrated)
-#Tcells_integrated<-readRDS("./01_tidy_data/3_Subclustering_Tcells.rds")
+Tcells_integrated<-readRDS("./01_tidy_data/3_Subclustering_Tcells.rds")
 #### Vizuals
 p <-VlnPlot(Tcells_integrated,features = "percent.mt") & theme(plot.title = element_text(size=10))
 print(p)
@@ -313,3 +315,19 @@ p<-DoHeatmap(Tcells_integrated, assay = "RNA", slot = "scale.data", features = u
         legend.text = element_text(size=6))
 print(p)
 ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_HeatMap_ClusterMarker_AllMarkersB.png"),  p,  width = 3.25,  height = 3.25,  dpi = 1200,  bg="transparent"  )
+
+####try to fin enriched gensets to determine t cell subclusters
+dbs <- listEnrichrDbs()  
+dbs_selection <- unique(dbs$libraryName)[grep("Mouse",unique(dbs$libraryName))]
+
+for(c in Tcells_integrated$seurat_clusters){
+  for (i in 1:length(dbs_selection[1:3])) {
+    database<-dbs_selection[i]
+    print(database)
+    p<-DEenrichRPlot(Tcells_integrated,ident.1= c,test.use = "MAST",enrich.database = database, max.genes = 1000, verbose =T)+
+      print(p)
+    ggsave( filename = paste0("./03_plots/3_Subclustering/Subcluster_T_DEnrichPlot_Cluster_",c,"_",database,".png"),  p,  width = 10,  height = 5,  dpi = 300,  bg="white"  )
+      }
+}
+########
+#####https://bioconductor.org/books/3.13/OSCA.basic/cell-type-annotation.html#assigning-cluster-labels-from-markers

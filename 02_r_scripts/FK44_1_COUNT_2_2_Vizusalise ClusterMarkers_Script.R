@@ -56,12 +56,12 @@ set.seed(42)
 #### Load Input Data ####
 ### Results from FK44.1_COUNT_2_0_TRANSFORM and CLUSTERING
 ### SoupX, QC, SCT, Integration, Clustering, Annotation, Removal of Clusters with low cell numbers
+#NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds)
+#y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
+#DefaultAssay(NPC_ALL_TRANSFORMED) <-"SCT"
+#NPC_ALL_TRANSFORMED <- PrepSCTFindMarkers(NPC_ALL_TRANSFORMED)
+#saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds"")
 NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds")
-y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
-DefaultAssay(NPC_ALL_TRANSFORMED) <-"SCT"
-NPC_ALL_TRANSFORMED <- PrepSCTFindMarkers(NPC_ALL_TRANSFORMED)
-#saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
-#NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/4_NPC_ALL_TRANSFORM_Markers.rds")
 
 #### Define Cluster Sorting
 myClusterSorting <-c("T cells","NK cells","B cells","Macrophages","Monocytes","Granulocytes","Fibroblasts","Endothelial cells","Hepatocytes")
@@ -313,6 +313,20 @@ DefaultAssay(NPC_ALL_TRANSFORMED) <-"RNA"
 p<-VlnPlot(NPC_ALL_TRANSFORMED, features = ConservedMarkers1, assay= "RNA", layer= "scale.data",log = T, stack = T,flip = F, fill.by = "ident")+
     theme_classic()+NoLegend()+theme(axis.title = element_blank())+
    labs(y="Cell Type")
+print(p)
+ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_VlnPlot1.png"), p,width = 8, height = 4, dpi = 800,bg="transparent")
+
+#### Do Stacked VlnPlot ofSome special Fatty Genes####
+Idents(NPC_ALL_TRANSFORMED) <- "celltype.stim"
+Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting2)
+Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.main"
+Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting)
+
+FattyGenes <-c("Saa1","Saa2","Cxcl1","Fabp1","Alb","Apoa1","Serpina1e","Fgg")
+DefaultAssay(NPC_ALL_TRANSFORMED) <-"RNA"
+p<-VlnPlot(NPC_ALL_TRANSFORMED, features = FattyGenes, assay= "RNA", layer= "scale.data",log = F, stack = T,flip = F, fill.by = "ident")+
+  theme_classic()+NoLegend()+theme(axis.title = element_blank())+
+  labs(y="Cell Type")
 print(p)
 ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_VlnPlot1.png"), p,width = 8, height = 4, dpi = 800,bg="transparent")
 
