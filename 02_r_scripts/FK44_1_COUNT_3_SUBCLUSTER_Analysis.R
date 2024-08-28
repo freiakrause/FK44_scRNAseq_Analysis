@@ -252,7 +252,27 @@ p<-DotPlot(Tcells_integrated,  assay = "RNA", scale= T, features =unique(Cytokin
   #geom_hline(yintercept=9.4)
 print(p)
 
+#####  look at thing with VlnPlot
+Idents(Tcells_integrated)<-"seurat_clusters"
+DefaultAssay(Tcells_integrated) <- "RNA"
 
+p<-VlnPlot(Tcells_integrated, 
+           features = Cytokines_and_Stuff, 
+           assay= "RNA", 
+           layer= "scale.data",
+           log = F, 
+           stack = T,
+           flip = F, 
+           fill.by = "ident",
+           split.by="stim")+
+  coord_cartesian( ylim=c(1,7),clip = "off")+
+  labs(title= "Lipid Metabolism",
+       x= "Expression Level", y="Cell Type")+scale_fill_manual(values=c("#90bff9","#99cc99"))+
+  theme_classic()+
+  theme(plot.title = element_text(size=9.5,hjust=0.5),
+        axis.title=element_text(size=9))
+print(p)
+ggsave(filename = paste0("./03_plots/3_Subclustering/T_VlnPlot_TcellsGenes.png"), p,width = (length(unique(Fatty))*2)-1, height = 3.5, dpi = 600,bg="transparent")
 #### Caclucalte Conseverd Markers
 TConservedMarkers20<-data.frame()
 

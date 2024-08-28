@@ -186,9 +186,11 @@ dev.off()
 
 
 #rm(NPC, NPC.anchors, NPC_list)
-saveRDS(NPC_ALL_TRANSFORMED, "./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
+#saveRDS(NPC_ALL_TRANSFORMED, "./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
 #rm(NPC_ALL_TRANSFORMED)
-#NPC_ALL_TRANSFORMED<-readRDS("./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
+NPC_ALL_TRANSFORMED<-readRDS("./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
+
+
 DefaultAssay(NPC_ALL_TRANSFORMED) <- "integrated"
 p1 <- DimPlot(NPC_ALL_TRANSFORMED, group.by = "sample")
 plot(p1)
@@ -207,12 +209,8 @@ mouseRNA.main <- SingleR(test = sce,assay.type.test = 1,ref = mouseRNA.ref,label
 mouseRNA.fine <- SingleR(test = sce,assay.type.test = 1,ref = mouseRNA.ref,labels = mouseRNA.ref$label.fine)
 NPC_ALL_TRANSFORMED@meta.data$mouseRNA.main <- mouseRNA.main$pruned.labels
 NPC_ALL_TRANSFORMED@meta.data$mouseRNA.fine <- mouseRNA.fine$pruned.labels
-
-#Add colums for celltype_stim and celltype_sex for potential future analysis
-NPC_ALL_TRANSFORMED$celltype.stim <- paste(NPC_ALL_TRANSFORMED$mouseRNA.main, NPC_ALL_TRANSFORMED$stim, sep = "_")
-NPC_ALL_TRANSFORMED$celltype.sex <- paste(NPC_ALL_TRANSFORMED$mouseRNA.main, NPC_ALL_TRANSFORMED$sex, sep = "_")
-rm(mouseRNA.fine, mouseRNA.main, mouseRNA.ref, sce)
 x<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main)%>%summarise(n=n())
+rm(mouseRNA.fine, mouseRNA.main, mouseRNA.ref, sce)
 ################### Save the SCT Transformed Seurat Object with Annotations############
 saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated.rds")
 ################## Load SC Transformed Seurat Object with Annotations ###############
@@ -223,50 +221,76 @@ NPC_ALL_TRANSFORMED<-subset(NPC_ALL_TRANSFORMED,
                             subset=mouseRNA.main!= "Adipocytes"& #bc only 2 0 vs 2
                               mouseRNA.main!= "Epithelial cells"& #bc only 4 4vs0
                               mouseRNA.main!= "Dendritic cells"& #bc only 17 9vs 8
-                              mouseRNA.main!= "Erythrocytes"& #bc only 16 4 vs 12
-                              (malat1_threshold=="TRUE" | mouseRNA.main=="Hepatocytes"))         #substracts empty droplets/cells wo nucleus, but not for heps bc heps always look like sh*?$%$t
-NPC_ALL_TRANSFORMED$mouseRNA.main[grepl("Microglia", NPC_ALL_TRANSFORMED$mouseRNA.main)] <- "Macrophages"       # Mikroglia a brain marcos. i checked some of Conserved micro genes and they also fit kupffer cells, so i just merge these clusters here                      
+                              mouseRNA.main!= "Erythrocytes")#& #bc only 16 4 vs 12
+                              #(malat1_threshold=="TRUE" | mouseRNA.main=="Hepatocytes"))         #substracts empty droplets/cells wo nucleus, but not for heps bc heps always look like sh*?$%$t
+NPC_ALL_TRANSFORMED$mouseRNA.main[grepl("Microglia", NPC_ALL_TRANSFORMED$mouseRNA.main)] <- "Macrophages or HSC"       # Mikroglia a brain marcos. i checked some of Conserved micro genes and they also fit kupffer cells, so i just merge these clusters here; I read that HSC also express some mikroglia genes, so maybe my microglia here are HSC?                      
 z<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
-saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds")
-NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds")
+myClusterSorting <-c("Hepatocytes","Endothelial cells","B cells","T cells","Macrophages","Granulocytes","NK cells","Monocytes","Fibroblasts","Macrophages or HSC")
+z<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim,sex)%>%summarise(n=n())%>%ungroup()%>%
+  group_by(mouseRNA.main)%>%
+  bind_rows(summarise(., across(where(is.numeric), sum), across(where(is.character), ~'Total')))%>%
+  ungroup()%>%
+  bind_rows(summarise(., across(where(is.numeric), sum),across(where(is.character), ~'Total')))%>% 
+  arrange(factor(mouseRNA.main, levels = myClusterSorting))
+
+
+z%>%
+  gt()%>%
+  tab_header(title = "Number of Cells per Cluster and Condition")%>%
+  tab_style(style = cell_text(color = "black", weight = "bold", align = "center"),locations = cells_title("title"))%>%
+  tab_style(style= cell_text(weight= "bold"),locations = cells_column_labels(everything()))%>%
+  opt_table_lines()%>%
+  tab_options(table.font.size="small")%>%
+  gtsave("Cell_Numbers.docx",path="./03_plots/2_Clustering/")
+
+#Add colums for celltype_stim and celltype_sex for potential future analysis
+
+NPC_ALL_TRANSFORMED$celltype.stim <- paste(NPC_ALL_TRANSFORMED$mouseRNA.main, NPC_ALL_TRANSFORMED$stim, sep = "_")
+NPC_ALL_TRANSFORMED$celltype.sex <- paste(NPC_ALL_TRANSFORMED$mouseRNA.main, NPC_ALL_TRANSFORMED$sex, sep = "_")
+#saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds")
+saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter.rds")
+
+#NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds")
 
 #### Vizuals Malat1 Filter ###
 Idents(NPC_ALL_TRANSFORMED)<-"mouseRNA.main"
-png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_RidgePlot_ALLTransformed_mouseRNAMain.png"))
+#png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_RidgePlot_ALLTransformed_mouseRNAMain.png"))
+png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_RidgePlot_ALLTransformed_mouseRNAMain_woMALAT_Filter.png"))
+
 RidgePlot(NPC_ALL_TRANSFORMED, features = "Malat1")
 dev.off()
-png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_DimPLot_ALLTranformed_mouseRNAMain.png"))
+png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_DimPLot_ALLTranformed_mouseRNAMain_woMALAT_Filter.png"))
 DimPlot(NPC_ALL_TRANSFORMED, group.by = "malat1_threshold")
 dev.off()
-png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_VlnPLot_ALLTranformed_mouseRNAMain.png"))
+png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_VlnPLot_ALLTranformed_mouseRNAMain_woMALAT_Filter.png"))
 VlnPlot(NPC_ALL_TRANSFORMED,features = "Malat1")
 dev.off()
 
-png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_RidgePlot_ALLTransformed_mouseRNAMain_after_MALAT1_and_Number.png"))
+png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_RidgePlot_ALLTransformed_mouseRNAMain_after_MALAT1_and_Number_woMALAT_Filter.png"))
 RidgePlot(NPC_ALL_TRANSFORMED, features = "Malat1")
 dev.off()
-png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_DimPLot_ALLTranformed_mouseRNAMain_MALAT1_and_Number.png"))
+png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_DimPLot_ALLTranformed_mouseRNAMain_MALAT1_and_Number_woMALAT_Filter.png"))
 DimPlot(NPC_ALL_TRANSFORMED, group.by = "malat1_threshold")
 dev.off()
-png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_VlnPLot_ALLTranformed_mouseRNAMain_MALAT1_and_Number.png"))
+png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_VlnPLot_ALLTranformed_mouseRNAMain_MALAT1_and_Number_woMALAT_Filter.png"))
 VlnPlot(NPC_ALL_TRANSFORMED,features = "Malat1")
 dev.off()
 
 ############## Vizualise annotated Clusters ###################################
 #Vizualise Cluster No ----
-png("./03_plots/2_Clustering/Clustering_1_ClusterNo_woLegend.png")
+png("./03_plots/2_Clustering/Clustering_1_ClusterNo_woLegend_woMALAT_Filter.png")
 DimPlot(NPC_ALL_TRANSFORMED, label = T, repel = T , group.by = "seurat_clusters") + ggtitle("Unsupervised clustering")+ NoLegend()
 dev.off()
-png("./03_plots/2_Clustering/Clustering_1_ClusterNo_wLegend.png")
+png("./03_plots/2_Clustering/Clustering_1_ClusterNo_wLegend_woMALAT_Filter.png")
 NPC_ALL_TRANSFORMED <- SetIdent(NPC_ALL_TRANSFORMED, value = "seurat_clusters")
 DimPlot(NPC_ALL_TRANSFORMED, label = T , repel = T, label.size = 3)+ggtitle("Unsupervised clustering")
 dev.off()
 
 #Vizualise Clusters with Fine Annotation ----
-png("./03_plots/2_Clustering/Clustering_1_ClusterMouseFine_woLegend.png")
+png("./03_plots/2_Clustering/Clustering_1_ClusterMouseFine_woLegend_woMALAT_Filter.png")
 DimPlot(NPC_ALL_TRANSFORMED, label = T, repel = T, group.by = "mouseRNA.fine") + ggtitle("Annotation Fine")+NoLegend()
 dev.off()
-png("./03_plots/2_Clustering/Clustering_1_ClusterMouseFine_wLegend.png")
+png("./03_plots/2_Clustering/Clustering_1_ClusterMouseFine_wLegend_woMALAT_Filter.png")
 NPC_ALL_TRANSFORMED <- SetIdent(NPC_ALL_TRANSFORMED, value = "mouseRNA.fine")
 DimPlot(NPC_ALL_TRANSFORMED, label = F , repel = T, label.size = 3)
 dev.off()
@@ -280,28 +304,27 @@ p<-DimPlot(NPC_ALL_TRANSFORMED,
         pt.size = 1)+
   NoLegend()+
   scale_color_observable()
-ggsave(filename = paste0("./03_plots/2_Clustering/Clustering_1_ClusterMouseMain_woLegend.png"), p,width = 10, height = 10, dpi = 600)
+ggsave(filename = paste0("./03_plots/2_Clustering/Clustering_1_ClusterMouseMain_woLegend_woMALAT_Filter.png"), p,width = 10, height = 10, dpi = 600)
 
 
 NPC_ALL_TRANSFORMED <- SetIdent(NPC_ALL_TRANSFORMED, value = "mouseRNA.main")
-png("./03_plots/2_Clustering/Clustering_1_ClusterMouseMain_wLegend.png")
+png("./03_plots/2_Clustering/Clustering_1_ClusterMouseMain_wLegend_woMALAT_Filter.png")
 DimPlot(NPC_ALL_TRANSFORMED, label = F , repel = T,group.by = "mouseRNA.main", label.size = 3)+
   scale_color_paletteer_d("peRReo::planb")
 
 dev.off()
 #Vizualise Clusters with Annotation of Sex ----
-png("./03_plots/2_Clustering/Clustering_1_ClusterSex.png")
+png("./03_plots/2_Clustering/Clustering_1_ClusterSex_woMALAT_Filter.png")
 DimPlot(NPC_ALL_TRANSFORMED, label = F, repel = T, group.by = "sex") + ggtitle("Sex")
 dev.off()
 
 #Vizualise Cluster with Annotation of Animal ----
-png("./03_plots/2_Clustering/Clustering_1_ClusterAnimal.png")
+png("./03_plots/2_Clustering/Clustering_1_ClusterAnimal_woMALAT_Filter.png")
 DimPlot(NPC_ALL_TRANSFORMED, label = F, repel = T, group.by = "sample") + ggtitle("Animal")
 dev.off()
 
 NPC_ALL_TRANSFORMED <- SetIdent(NPC_ALL_TRANSFORMED, value = "stim")
-png("./03_plots/2_Clustering/Clustering_3_QC6_CR1_Stim.png")
+png("./03_plots/2_Clustering/Clustering_3_QC6_CR1_Stim_woMALAT_Filter.png")
 DimPlot(NPC_ALL_TRANSFORMED, label = F , group.by = "stim",repel = T, label.size = 3)+ ggtitle("Stimulation")
 dev.off()
-
 
