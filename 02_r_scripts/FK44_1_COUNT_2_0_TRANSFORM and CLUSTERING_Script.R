@@ -50,7 +50,8 @@ library(EnhancedVolcano)
 library(viridis)
 library(paletteer)
 library(ggsci)
-
+library(mmtable2)
+library(gt)
 source("02_r_scripts/malat1_function.R")
 source("02_r_scripts/VlnPlot_Function.R")
 set.seed(42)
@@ -186,9 +187,9 @@ dev.off()
 
 
 #rm(NPC, NPC.anchors, NPC_list)
-#saveRDS(NPC_ALL_TRANSFORMED, "./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
+saveRDS(NPC_ALL_TRANSFORMED, "./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
 #rm(NPC_ALL_TRANSFORMED)
-NPC_ALL_TRANSFORMED<-readRDS("./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
+#NPC_ALL_TRANSFORMED<-readRDS("./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
 
 
 DefaultAssay(NPC_ALL_TRANSFORMED) <- "integrated"
@@ -223,7 +224,7 @@ NPC_ALL_TRANSFORMED<-subset(NPC_ALL_TRANSFORMED,
                               mouseRNA.main!= "Dendritic cells"& #bc only 17 9vs 8
                               mouseRNA.main!= "Erythrocytes")#& #bc only 16 4 vs 12
                               #(malat1_threshold=="TRUE" | mouseRNA.main=="Hepatocytes"))         #substracts empty droplets/cells wo nucleus, but not for heps bc heps always look like sh*?$%$t
-NPC_ALL_TRANSFORMED$mouseRNA.main[grepl("Microglia", NPC_ALL_TRANSFORMED$mouseRNA.main)] <- "Macrophages or HSC"       # Mikroglia a brain marcos. i checked some of Conserved micro genes and they also fit kupffer cells, so i just merge these clusters here; I read that HSC also express some mikroglia genes, so maybe my microglia here are HSC?                      
+NPC_ALL_TRANSFORMED$mouseRNA.main[grepl("Microglia", NPC_ALL_TRANSFORMED$mouseRNA.main)] <- "Macrophages"       # Mikroglia a brain marcos. i checked some of Conserved micro genes and they also fit kupffer cells, so i just merge these clusters here; I read that HSC also express some mikroglia genes, so maybe my microglia here are HSC?                      
 z<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
 myClusterSorting <-c("Hepatocytes","Endothelial cells","B cells","T cells","Macrophages","Granulocytes","NK cells","Monocytes","Fibroblasts","Macrophages or HSC")
 z<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim,sex)%>%summarise(n=n())%>%ungroup()%>%

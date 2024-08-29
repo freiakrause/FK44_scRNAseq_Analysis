@@ -66,7 +66,7 @@ M_genes <-c("Clec4f")
 Gene_List <-list(Hep_genes,T_genes,B_genes,M_genes)
 animals <-c("87","88","91","92")
 for (i in animals){  
-  sc = load10X(paste0("./00_raw_data/Liver_NPC_iAL",i,"_transcriptome"))
+  sc = load10X(paste0("./00_raw_data/biomedical-sequencing.at/projects/BSA_0873_FK44_1_LiverMet_A_1_1_51ddbfd228ec40b096e110101b219cb0/COUNT/Liver_NPC_iAL",i,"_transcriptome"))
   sc = setClusters(sc, sc$metaData$clustersFine)
   Soup <-sc$soupProfile[order(sc$soupProfile$est, decreasing = TRUE), ]
   write.csv(Soup,paste0("./99_other/0_Decont_SoupX/0_Decont_SoupX_Soup_Genes_iAL",i,".csv"))

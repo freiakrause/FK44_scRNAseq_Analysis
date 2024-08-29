@@ -1,5 +1,4 @@
 #This is the script to analyse FK44.1 scRNAseq COUNT data provided by BSF; Data from 1_QC SCript is loaded
-
 ##################### Install Packages ############################################
 #install.packages("renv")
 #renv::init()    #creates project library,  lockfile and Rprofile
@@ -56,18 +55,19 @@ set.seed(42)
 #### Load Input Data ####
 ### Results from FK44.1_COUNT_2_0_TRANSFORM and CLUSTERING
 ### SoupX, QC, SCT, Integration, Clustering, Annotation, Removal of Clusters with low cell numbers
-#NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds)
+#NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds")
+NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter.rds")
 #y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
-#DefaultAssay(NPC_ALL_TRANSFORMED) <-"SCT"
-#NPC_ALL_TRANSFORMED <- PrepSCTFindMarkers(NPC_ALL_TRANSFORMED)
-#saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds"")
-NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds")
+DefaultAssay(NPC_ALL_TRANSFORMED) <-"SCT"
+NPC_ALL_TRANSFORMED <- PrepSCTFindMarkers(NPC_ALL_TRANSFORMED)
+saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter_PrepSCT.rds")
+#NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter_PrepSCT.rds")
+y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
 
 #### Define Cluster Sorting
 myClusterSorting <-c("T cells","NK cells","B cells","Macrophages","Monocytes","Granulocytes","Fibroblasts","Endothelial cells","Hepatocytes")
 myClusterSorting2 <-c("T cells_EtOH","T cells_TAM","NK cells_EtOH","NK cells_TAM","B cells_EtOH","B cells_TAM","Macrophages_EtOH","Macrophages_TAM",
-                      "Monocytes_EtOH","Monocytes_TAM","Granulocytes_EtOH","Granulocytes_TAM",
-                      "Fibroblasts_EtOH","Fibroblasts_TAM","Endothelial cells_EtOH","Endothelial cells_TAM","Hepatocytes_EtOH","Hepatocytes_TAM")
+                      "Monocytes_EtOH","Monocytes_TAM","Granulocytes_EtOH","Granulocytes_TAM","Fibroblasts_EtOH","Fibroblasts_TAM","Endothelial cells_EtOH","Endothelial cells_TAM","Hepatocytes_EtOH","Hepatocytes_TAM")
 #### Define some interesting geens (manually)
 Cytokines_and_Stuff <-c("Lyve1","Flt4","Efnb2","Ephb4","Icam1","Selp","F3",
                         "Itgax","Cd163","Msr1","Mrc1","Vegfa","Maf","Cxcl9","Cxcl10","Cxcl11","Stat6","Socs1",
@@ -88,10 +88,12 @@ Fibro_Marker <-c("Egr1","Fstl1","Dcn","Mmp2","Lum","Col6a2") #"Gsn",
 HSC_Marker <-c("Col1a1","Col1a2","Col3a1","Bgn") #"Igfbp3","Igfbp7",
 Endo_Marker <-c("Id3","Ptprb","Pecam1","Egfl7","Gng11","Flt1","Cldn5","Adgrf5") #,"Eng"
 Hep_Marker <-c("Ass1","Orm1","Apoa1","Apoa2","Alb","Aldh6a1") #,"Ambp"
-Canonical_ClusterMarker <-unique(c(Leukocyte_Marker,T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker, KC_Marker,Mono_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker,Endo_Marker,Hep_Marker))
+Canonical_ClusterMarker <-unique(c(Leukocyte_Marker, T_Marker, NK_Marker, B_Marker, myeloid_Marker, Macro_Marker, KC_Marker ,Mono_Marker, Neutro_Marker, Fibro_Marker, HSC_Marker, Endo_Marker, Hep_Marker))
 #### Do HeatMap of manually assigned Canonical Markers ####
 Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.main"
 Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting)
+z<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
+
 p<-DoHeatmap(NPC_ALL_TRANSFORMED, assay = "RNA",slot = "scale.data", features = Canonical_ClusterMarker,
              draw.lines = T,lines.width = NULL,
              label = F, group.bar =T)+
@@ -398,29 +400,6 @@ p<-VlnPlot(NPC_ALL_TRANSFORMED,
         axis.title=element_text(size=9))
 print(p)
 ggsave(filename = paste0("./03_plots/2_Clustering/Poster_VlnPlot_Fatty_woMALAT_Filter.png"), p,width = (1+length(unique(Fatty))*1.5), height = 3.5, dpi = 600,bg="transparent")
-#### Dot PLot interesting genes
-p<-DotPlot(NPC_ALL_TRANSFORMED,  assay = "RNA",features =FattyGenes)+
-  RotatedAxis()+
-  scale_size(breaks = c(0, 25, 50, 75, 100),range(0,10))+
-  scale_colour_distiller(palette="Blues", trans="reverse")+
-  guides(colour = guide_colourbar(reverse = TRUE))+
-  theme(panel.background = element_rect(fill = "gray95",colour="black", linewidth = 1),
-        axis.line.y.left =element_blank(),
-        axis.title.x = element_text(size = 16),
-        axis.title.y = element_text(size = 16),
-        axis.text.y.left = element_text(size = 10),
-        axis.text.x.bottom = element_text(size = 10),
-        legend.justification = "top", 
-        legend.key.height= unit(0.6, 'cm'), 
-        legend.key.width= unit(0.3, 'cm'),
-        legend.title = element_text(size=9),
-        legend.text = element_text(size=7),
-        axis.line.x.bottom =element_blank(),
-        axis.text.x =element_text(angle = 90,vjust = 0.5))+
-  xlab("Marker genes")+
-  ylab("Cell Type")
-print(p)
-
 
 #### Do Stacked VlnPlot of 5 Marker per Cluster
 DefaultAssay(NPC_ALL_TRANSFORMED) <-"RNA"
@@ -532,7 +511,7 @@ MarkerFrame <-data.frame()
 
 for (e in 1:length(CanoMM)){
   print(e)
- print(CanoMM[[e]])
+  print(CanoMM[[e]])
 print(names(CanoMM[e])[1])
 x<-data.frame(mouseGene=CanoMM[[e]], Marker.for =names(CanoMM[e])[1])
 MarkerFrame <-rbind(MarkerFrame,x)
