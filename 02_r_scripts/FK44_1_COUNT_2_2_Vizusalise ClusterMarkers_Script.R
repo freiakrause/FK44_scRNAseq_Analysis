@@ -444,7 +444,9 @@ p<-VlnPlot(NPC_ALL_TRANSFORMED,
   theme(plot.title = element_text(size=9.5,hjust=0.5),
         axis.title=element_text(size=9))
 print(p)
-ggsave(filename = paste0("./03_plots/2_Clustering/Poster_VlnPlot_APP_woMALAT_Filter.png"), p,width =(1+(length(unique(APP))*1.5)), height = 3.5, dpi = 600,bg="transparent")
+ggsave(filename = paste0("./03_plots/2_Clustering/Poster_VlnPlot_APP_woMALAT_Filter.png"),
+       p,width =(1+(length(unique(APP))*1.5)),
+       height = 3.5, dpi = 600,bg="transparent")
 
 p<-VlnPlot(NPC_ALL_TRANSFORMED, 
            features = ECM, 
@@ -511,8 +513,8 @@ print(p)
 ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_VlnPlot",c,"_woMALAT_Filter.png"), p,width = 8, height = 4, dpi = 800,bg="transparent")
 }
 
-#### Try to get Markers from Panglao DB to have independet clustermakers to proove my clusters
-#Code from interent to get human geens to mouse gene conversion
+#### Try to get Markers from Panglao DB to have independent cluster markers to prove my clusters
+#Code from internet to get human genes to mouse gene conversion
 mouse_human_genes <- read.csv("http://www.informatics.jax.org/downloads/reports/HOM_MouseHumanSequence.rpt",sep="\t")
 # separate human and mouse 
 mouse <- split.data.frame(mouse_human_genes,mouse_human_genes$Common.Organism.Name)[[2]]
@@ -520,7 +522,7 @@ human <- split.data.frame(mouse_human_genes,mouse_human_genes$Common.Organism.Na
 # remove some columns
 mouse <- mouse[,c(1,4)]
 human <- human[,c(1,4)]
-# merge the 2 dataset  (note that the human list is longer than the mouse one)
+# merge the 2 datasets  (note that the human list is longer than the mouse one)
 mh_data <- merge.data.frame(mouse,human,by = "DB.Class.Key",all.y = TRUE) 
 mh_data<-mh_data%>%arrange(desc(Symbol.y))
 head(mh_data)
@@ -528,11 +530,18 @@ head(mh_data)
 PanglaoMarkers <- read.table("./99_other/PanglaoDB_markers_27_Mar_2020.tsv",h=T,sep="\t",quote="")
 #Shrink Dataset to contain right species, necessary cell types and organs and some selection in sensitivity/canonical marker
 PanglaoMarkers <-PanglaoMarkers%>%
-  filter(species == "Mm" | species == "Mm Hs" & sensitivity_mouse > 0.01,cell.type !="Adipocytes",cell.type !="Chondrocytes",cell.type !="Plateletes",
-                        !is.na(sensitivity_mouse ), !is.na(specificity_mouse), !is.na(canonical.marker),canonical.marker==1,
-                        organ == "Liver" |organ == "Immune system" | organ == "Blood" |organ == "Connective tissue" | organ=="Epithelium"|
-                        organ == "Vasculature" |organ == "Other")
-#Get the human genes names fromPanlga transformed to mouseGene names
+  filter(species == "Mm" | species == "Mm Hs" & sensitivity_mouse > 0.01,
+         cell.type !="Adipocytes",
+         cell.type !="Chondrocytes",
+         cell.type !="Plateletes",
+        !is.na(sensitivity_mouse ),
+        !is.na(specificity_mouse),
+        !is.na(canonical.marker),
+        canonical.marker==1,
+        organ == "Liver" |organ == "Immune system" | 
+        organ == "Blood" |organ == "Connective tissue" | 
+        organ=="Epithelium"|organ == "Vasculature" |organ == "Other")
+#Get the human genes names from Panglao transformed to mouseGene names
 PanglaoMarkers[,"mouseGene"] <- NA
 for (g in mh_data$Symbol.y){
   if (g %in% PanglaoMarkers$official.gene.symbol){
@@ -544,13 +553,16 @@ for (g in mh_data$Symbol.y){
     }
   }
 #reorder columns
-PanglaoMarkers%>%select(cell.type,mouseGene,official.gene.symbol,species,organ,sensitivity_mouse,specificity_mouse,ubiquitousness.index,nicknames,product.description,gene.type,germ.layer) 
-#check if there a unassigned mosueGenes
+PanglaoMarkers%>%select(cell.type,mouseGene,official.gene.symbol,
+                        species,organ,sensitivity_mouse,specificity_mouse,
+                        ubiquitousness.index,nicknames,product.description,
+                        gene.type,germ.layer) 
+#check if there a unassigned mouseGenes
 nanana<-PanglaoMarkers%>%filter(is.na(mouseGene) )
 #### need to find mouse gene names for the nananana s ###
 write.csv(nanana,paste0("./99_other/2_Clustering/PanglaoDBMarkes_woMouseName.csv"))
 #### added mouse gene names by hand #####
-# convert the NA mosuegenes with the hand filled datatable to mouseGene names
+# convert the NA mousegenes with the hand filled datatable to mouseGene names
 Panglao_noNA <-read.csv("99_other/2_Clustering/PanglaoDBMarkers_manually_assigned.csv", sep = ";")
 for (g in Panglao_noNA$official.gene.symbol){
   if (g %in% PanglaoMarkers$official.gene.symbol){
@@ -563,8 +575,10 @@ for (g in Panglao_noNA$official.gene.symbol){
 }
 #Are there NAs left?
 nonono<-PanglaoMarkers%>%filter(is.na(mouseGene) )
-#Sort genes in Panlga bei sensitivity in mouse
-PanglaoMarkers <-PanglaoMarkers%>%group_by(cell.type)%>%arrange((desc(sensitivity_mouse)),.by_group = T)
+#Sort genes in Panglao bei sensitivity in mouse
+PanglaoMarkers <-PanglaoMarkers%>%
+  group_by(cell.type)%>%
+  arrange((desc(sensitivity_mouse)),.by_group = T)
 
 #PanglaoMarkers<-PanglaoMarkers%>%
 #  mutate(mouseGene = ifelse(mouseGene %in% NPC_ALL_TRANSFORMED@assays$RNA@meta.data$var.features, mh_data$Symbol.x, NA))%>%
@@ -582,11 +596,16 @@ for(c in unique(PanglaoMarkers$cell.type)){
           legend.key.width= unit(0.1, 'cm'),
           legend.text = element_text(size=4))
   print(p)
-  ggsave(filename = paste0("./03_plots/2_Clustering/ClustermarkerPanglao",c,"_woMALAT_Filter.png"), p,width = 3.25, height = 3.25,dpi = 1200, bg="transparent")
-  
-}
+  ggsave(filename = paste0("./03_plots/2_Clustering/ClustermarkerPanglao",c,"_woMALAT_Filter.png"),
+         p,
+         width = 3.25, 
+         height = 3.25,
+         dpi = 1200, 
+         bg="transparent")
+  }
 ##### Panglao Markers kinda specific but also not. need to have good metrics to select genes to represent "Canonical Cluster Markers"#
-#### I looked at PanglaoMarkers and on top of this script I defined manually marker genes per cluster. Here I want to get the product descriptions for these defined markers
+#### I looked at PanglaoMarkers and on top of this script I defined manually marker genes per cluster. 
+#Here I want to get the product descriptions for these defined markers
 CanoMarkers_Table<-PanglaoMarkers%>%ungroup()%>%filter(mouseGene %in% Canonical_ClusterMarker)%>%
   select(mouseGene, official.gene.symbol, product.description,cell.type)%>%
   arrange(factor(mouseGene,levels=Canonical_ClusterMarker))%>%
