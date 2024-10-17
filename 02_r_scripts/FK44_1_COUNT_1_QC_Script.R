@@ -1,64 +1,53 @@
 #This is the script to perform QC on FK44.1 scRNAseq COUNT data provided by BSF
 
-############################ Install Packages #################################
-#install.packages("renv")
-#renv::init()    #creates project library,  lockfile and Rprofile
-#renv::snapshot() # updates lockfile abou current-used packages-> can be shared and reproduced by others when restore() is used
-#renv::restore() # installs the exact same versions of packages determined in lockfile
-#renv::update()) #
-#renv::history() #
-#renv::install("usethis")
-#usethis::create_github_token()
+########################### Install Packages #################################
+# install.packages("renv")
+# renv::init()    #creates project library,  lockfile and Rprofile
+# renv::snapshot() # updates lockfile abou current-used packages-> can be shared and reproduced by others when restore() is used
+# renv::restore() # installs the exact same versions of packages determined in lockfile
+# renv::update()) #
+# renv::history() #
+# renv::install("usethis")
+# usethis::create_github_token()
 #renv::install("gitcreds")
 #gitcreds::gitcreds_set()
 #renv::install("remotes")
 #renv::install("ggplot2", "dplyr" ,"RColorBrewer") # package "SingleR" required by tutorial but not found when trying isntallation
-#renv::install("igraph") # für das scheiß igraph (benötigt für seurat) nach tausend jahren troublehsooting gefunden: ich brauche: sudo apt install build-essential gfortran UND sudo apt install build-essential gfortran, dann gehts
-#renv::install("Seurat")
-#renv::install("SoupX")
-#if (!require("BiocManager", quietly = TRUE))
+#renv::install("igraph","Seurat","SoupX") # für das scheiß igraph (benötigt für seurat) nach tausend jahren troublehsooting gefunden: ich brauche: sudo apt install build-essential gfortran UND sudo apt install build-essential gfortran, dann gehts
+# if (!require("BiocManager", quietly = TRUE))
 #  renv::install("BiocManager")
-#renv::install("gprofiler2")
+# renv::install("gprofiler2")
 #BiocManager::install(version = "3.18")
 #BiocManager::install("SingleR")
 #BiocManager::install("celldex")
 #BiocManager::install("SingleCellExperiment")
 #BiocManager::install('glmGamPoi')
-#BiocManager::install('decontX')
 #remotes::install_github("Moonerss/scrubletR")
 #remotes::install_github('immunogenomics/presto')
 #remotes::install_github("cysouw/qlcMatrix")
-#remotes::install_github("Nawijn-Group-Bioinformatics/FastCAR")
 ############################# Load Libraries ###################################
+library(dplyr)
+library(stringr)
 library(ggplot2)
+library(RColorBrewer)
+library(SoupX)
 library(Seurat)
 library(SingleR)
-library(dplyr)
 library(celldex)
-library(RColorBrewer)
 library(SingleCellExperiment)
 library(scrubletR)
 library(gprofiler2)
-library(SoupX)
 library(celda)
 library(scater)
-library(stringr)
 library(Matrix)
 library(gridExtra)
-library(qlcMatrix)
-library(pheatmap)
+#library(qlcMatrix)
+#library(pheatmap)
 source("02_r_scripts/malat1_function.R")
 set.seed(42)
-# output_dir <- file.path("./", "99_other/0_Decont_SoupX")
-# 
-# if (!dir.exists(output_dir)){
-#   dir.create(output_dir)
-# } else {
-#   print("Dir already exists!")
-# }
 
-# ###########################Load Data and Decontaminate with SoupX ##################
-#  #### Soup Decont ----
+###########################Load Data and Decontaminate with SoupX ##################
+#### Soup Decont ----
 Hep_genes <-c("Saa1", "Saa2","Alb","Tat")
 T_genes <-c("Cd3e","Cd3d", "Cd4", "Cd8a") 
 B_genes <-c("Cd19")
@@ -89,7 +78,7 @@ for (i in animals){
   png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_ClustersFine.png"))
   print(plot(gg))
   dev.off()
-
+  
   for (GL in Gene_List){     
     for (g in GL){
       dd$val = sc$toc[g, ]
@@ -123,9 +112,9 @@ for (i in animals){
     dev.off()
   }
 }
+rm()
 
 
- 
 ########################## Kategorien Stimlulation und Sex hinzufügen, evtl noch age? ####################
 animals <-c("_")#"87","88","91","92")
 
@@ -220,7 +209,6 @@ NPC_87@meta.data
 NPC_88@meta.data
 metadata <- rbind(NPC_87@meta.data,NPC_88@meta.data, NPC_91@meta.data, NPC_92@meta.data)
 metadata$log10GenesPerUMI <- log10(metadata$nFeature_RNA) / log10(metadata$nCount_RNA)
-
 metadata$cells <- rownames(metadata)
 metadata <- metadata %>%  dplyr::rename(nUMI = nCount_RNA,nGene = nFeature_RNA)
 metadata[["samples_QC"]]<-ifelse(metadata$QC6 == "Pass",paste0("PASSED"),paste0("FAILED"))
@@ -228,8 +216,6 @@ metadata_QC6 <-subset(metadata, QC6 == "Pass")
 
 ########################### Visualizations of the QC Parameters on Data wo QC  #############################################################################
 # Visualize number of cell per sample----
-
-
 png(paste0("./03_plots/1_QC/QC_1_noQC_Cells_per_sample_bar.png"))
 x <-metadata %>%
   ggplot(aes(x=sample, fill=samples_QC)) +
@@ -419,9 +405,7 @@ x <- metadata %>%
 print(x)
 dev.off()
 
-
 # ########################### Visualizations of the QC Parameters on Data with QC6############################################################################
-
 # Visualize number of cell per sample----
 png(paste0("./03_plots/1_QC/QC_1_QC6_Cells_per_sample_bar.png"))
 x <- metadata_QC6 %>%
@@ -618,8 +602,8 @@ dev.off()
 
 #normalize data set to account for sequencing depth, default scale to 10 000 and log2-transform
 NPC_87 <-subset(NPC_87, subset = QC6 == 'Pass')%>%
-      NormalizeData(verbose=F)%>%
-      FindVariableFeatures(selection.method = "vst", nfeatures = 2000, verbose = F)
+  NormalizeData(verbose=F)%>%
+  FindVariableFeatures(selection.method = "vst", nfeatures = 2000, verbose = F)
 saveRDS(NPC_87, "./01_tidy_data/1_QC_1_QC6_NPC_87.rds")
 
 NPC_88 <-subset(NPC_88, subset = QC6 == 'Pass')%>%NormalizeData(verbose=F)%>%
@@ -635,14 +619,4 @@ NPC_92 <-subset(NPC_92, subset = QC6 == 'Pass')%>%NormalizeData(verbose=F)%>%
 saveRDS(NPC_92, "./01_tidy_data/1_QC_1_QC6_NPC_92.rds")
 
 #Remove unused data from memory to save ram
-rm(NPC_87.data,NPC_88.data, NPC_91.data, NPC_92.data, metadata_QC5, metadata_QC6, metadata)
-
-########################## Define Anchors for Integration and Integrate Different Data Sets ####
-
-#NPC_87 <-readRDS("./01_tidy_data/1_QC_1_QC6_NPC_87.rds")
-#NPC_88 <-readRDS("./01_tidy_data/1_QC_1_QC6_NPC_88.rds")
-#NPC_91 <-readRDS("./01_tidy_data/1_QC_1_QC6_NPC_91.rds")
-#NPC_92 <-readRDS("./01_tidy_data/1_QC_1_QC6_NPC_92.rds")
-
-########################################################################
-########################################################################
+rm( NPC_87,NPC_88,NPC_91,NPC_92metadata_QC6, metadata)

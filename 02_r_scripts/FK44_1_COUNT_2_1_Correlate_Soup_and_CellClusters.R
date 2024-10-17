@@ -52,7 +52,7 @@ set.seed(42)
 
 animals <-c("87","88","91","92")
 # Import SCtransformed, integrated, clustered, annotated,  dataset from FK44_1_COUNT_2_TRANSFORM and CLUSTERING_Script.R
-NPC_CLUSTER <- readRDS("./01_tidy_data/5_NPC_ALL_TRANSFORM_Markers_on_integrated.rds")
+NPC_CLUSTER <- readRDS("./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter_PrepSCT.rds")
 # Do Tutorial from https://divingintogeneticsandgenomics.com/post/how-to-do-gene-correlation-for-single-cell-rnaseq-data-part-1/
 #Functions they define in the tutorial
 matrix_to_expression_df<- function(x, obj){

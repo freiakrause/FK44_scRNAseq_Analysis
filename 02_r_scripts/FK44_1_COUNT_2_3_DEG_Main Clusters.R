@@ -45,8 +45,12 @@ library(gprofiler2)
 library(patchwork)
 library(EnhancedVolcano)
 library(readr)
-source("02_r_scripts/malat1_function.R")
-source("02_r_scripts/VlnPlot_Function.R") 
+require(scales)
+source("02_r_scripts/Function_Malat1.R")
+source("02_r_scripts/Function_VlnPlot.R") 
+source("02_r_scripts/Function_DoMultiBarHeatmap.R") 
+rm(list = ls(all.names = TRUE)) # will clear all objects including hidden objects
+gc() # free up memory and report the memory usage
 set.seed(42)
 #### Load Input Data ####
 ### Results from FK44.1_COUNT_2_0
@@ -59,43 +63,44 @@ Idents(NPC_ALL_TRANSFORMED) <- "celltype.stim"
 #NPC_ALL_TRANSFORMED <- PrepSCTFindMarkers(NPC_ALL_TRANSFORMED)
 a<-unique(NPC_ALL_TRANSFORMED@meta.data$mouseRNA.main)
 y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
-# for (c in a){
-#   single_l.de <-FindMarkers(NPC_ALL_TRANSFORMED, assay = NULL, ident.2 = paste0(c,"_EtOH"), ident.1 = paste0(c,"_TAM"), 
-#                             verbose = T, recorrect_umi = FALSE, min.cells.feature = 3, min.pct= 0.2,
-#                             test.use="wilcox_limma")
-#   write.csv(single_l.de,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single_limma",c,".csv"))
-# }
-# for (c in a){
-#   single_M.de <-FindMarkers(NPC_ALL_TRANSFORMED, assay = NULL, ident.2 = paste0(c,"_EtOH"), ident.1 = paste0(c,"_TAM"), 
-#                             verbose = T,recorrect_umi = FALSE, min.cells.feature = 3, min.pct= 0.2,
-#                             test.use="MAST")
-#   write.csv(single_M.de,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single_MAST",c,".csv"))
-# }
-#   
+ # for (c in a){
+ #   single_l.de <-FindMarkers(NPC_ALL_TRANSFORMED, assay = NULL, ident.2 = paste0(c,"_EtOH"), ident.1 = paste0(c,"_TAM"),
+ #                             verbose = T, recorrect_umi = FALSE, min.cells.feature = 3, min.pct= 0.2,
+ #                             test.use="wilcox_limma")
+ #   write.csv(single_l.de,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single_limma",c,".csv"))
+ # }
+ # for (c in a){
+ #   single_M.de <-FindMarkers(NPC_ALL_TRANSFORMED, assay = NULL, ident.2 = paste0(c,"_EtOH"), ident.1 = paste0(c,"_TAM"),
+ #                             verbose = T,recorrect_umi = FALSE, min.cells.feature = 3, min.pct= 0.2,
+ #                             test.use="MAST")
+ #   write.csv(single_M.de,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single_MAST",c,".csv"))
+ # }
 
-# names(single_l.de) <- paste0(names(single_l.de), "_l.sc")
-# single_l.de$gene <- rownames(single_l.de)
-# names(single_M.de) <- paste0(names(single_M.de), "_M.sc")
-# single_M.de$gene <- rownames(single_M.de)
-# merge_dat <- merge(single_M.de, single_l.de,by = "gene")
-# merge_dat <- merge_dat[order(merge_dat$p_val_M.sc), ]
-# Number of genes that are marginally significant in both; marginally significant only in bulk; and marginally significant only in single-cell
-# common <- merge_dat$gene[which(merge_dat$p_val_l.sc < 0.05&
-#                                  merge_dat$p_val_M.sc < 0.05)]
-# write.csv(common,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_Common",c,".csv"))
-# only_sc_l <- merge_dat$gene[which(merge_dat$p_val_M.sc > 0.05 &
-#                                     merge_dat$p_val_l.sc < 0.05)]
-# write.csv(only_sc_l,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_Only_Limma",c,".csv"))
-# 
-# only_sc_M <- merge_dat$gene[which(  merge_dat$p_val_l.sc > 0.05 &
-#                                       merge_dat$p_val_M.sc < 0.05)]
-# write.csv(only_sc_M,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_Only_MAST",c,".csv"))
-# 
+
+ # names(single_l.de) <- paste0(names(single_l.de), "_l.sc")
+ # single_l.de$gene <- rownames(single_l.de)
+ # names(single_M.de) <- paste0(names(single_M.de), "_M.sc")
+ # single_M.de$gene <- rownames(single_M.de)
+ # merge_dat <- merge(single_M.de, single_l.de,by = "gene")
+ # merge_dat <- merge_dat[order(merge_dat$p_val_M.sc), ]
+ # #Number of genes that are marginally significant in both; marginally significant only in bulk; and marginally significant only in single-cell
+ # common <- merge_dat$gene[which(merge_dat$p_val_l.sc < 0.05&
+ #                                  merge_dat$p_val_M.sc < 0.05)]
+ # write.csv(common,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_Common",c,".csv"))
+ # only_sc_l <- merge_dat$gene[which(merge_dat$p_val_M.sc > 0.05 &
+ #                                     merge_dat$p_val_l.sc < 0.05)]
+ # write.csv(only_sc_l,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_Only_Limma",c,".csv"))
+ # 
+ # only_sc_M <- merge_dat$gene[which(  merge_dat$p_val_l.sc > 0.05 &
+ #                                       merge_dat$p_val_M.sc < 0.05)]
+ # write.csv(only_sc_M,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_Only_MAST",c,".csv"))
+
 myClusterSorting2 <-c("T cells_EtOH","T cells_TAM","NK cells_EtOH","NK cells_TAM","B cells_EtOH","B cells_TAM","Macrophages_EtOH","Macrophages_TAM",
                       "Monocytes_EtOH","Monocytes_TAM","Granulocytes_EtOH","Granulocytes_TAM","Fibroblasts_EtOH","Fibroblasts_TAM","Endothelial cells_EtOH","Endothelial cells_TAM","Hepatocytes_EtOH","Hepatocytes_TAM")
 Idents(NPC_ALL_TRANSFORMED) <- "celltype.stim"
 Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting2)
 
+#### Printing HeatMaps with Top10 Upregulated or Downregulated Genes defined by MAST, stimulation
 for (c in a){
   NPC_ALL_TRANSFORMED_sub<-subset(NPC_ALL_TRANSFORMED, mouseRNA.main==c)
   Idents(NPC_ALL_TRANSFORMED_sub) <- "stim"
@@ -103,10 +108,11 @@ for (c in a){
   MAST<-read.csv(paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single_MAST",c,".csv"))
   MAST<-MAST%>%mutate(pct.diff=(pct.1-pct.2))%>%arrange(desc(avg_log2FC),p_val)
   p<-DoHeatmap(NPC_ALL_TRANSFORMED_sub, assay = "RNA",slot = "scale.data", features = c(unique(MAST$X[1:100])),
-               draw.lines = T,lines.width = NULL,label = T,angle= 0, hjust= 0.5,vjust = -2.5,size = 2,
+               draw.lines = T,lines.width = NULL,label = T,angle= 0, hjust= 0.5,vjust = -2.5,size = 1.5,
                group.bar =T, group.colors = c("#90bff9","#99cc99"))+
     scale_fill_viridis_c()+
-    theme(plot.title = element_text(size =6,hjust = 0.5, vjust = -8),
+    theme(plot.margin = margin(0.5, 0.5,0.5, 0.5, "mm"),
+      plot.title = element_text(size =6,hjust = 0.5, vjust = -8),
           plot.subtitle = element_text(size= 4.5,hjust = 0.5, vjust = -7),
             axis.text.y.left = element_text(size = 3.5),
           legend.justification = "top",
@@ -123,10 +129,11 @@ for (c in a){
   MAST<-MAST%>%mutate(pct.diff=(pct.1-pct.2))%>%arrange(avg_log2FC,p_val)
 
   p<-DoHeatmap(NPC_ALL_TRANSFORMED_sub, assay = "RNA",slot = "scale.data", features = c(unique(MAST$X[1:100])),
-               draw.lines = T,lines.width = NULL,label = T,angle= 0, hjust= 0.5,vjust = -2.5,size = 2,
+               draw.lines = T,lines.width = NULL,label = T,angle= 0, hjust= 0.5,vjust = -2.5,size = 1.5,
                group.bar =T, group.colors = c("#90bff9","#99cc99"))+
     scale_fill_viridis_c()+
-    theme(plot.title = element_text(size =6,hjust = 0.5, vjust = -8),
+    theme(plot.margin = margin(0.5, 0.5,0.5, 0.5, "mm"),
+      plot.title = element_text(size =6,hjust = 0.5, vjust = -8),
           plot.subtitle = element_text(size= 4.5,hjust = 0.5, vjust = -7),
           axis.text.y.left = element_text(size = 3.5),
           legend.justification = "top",
@@ -134,13 +141,14 @@ for (c in a){
           legend.key.height= unit(0.2, 'cm'),
           legend.key.width= unit(0.1, 'cm'),
           legend.text = element_text(size=4))+
-    labs(title= paste0("TOP100 Upregulated Genes in ",c),
+    labs(title= paste0("TOP100 Downregulated Genes in ",c),
          subtitle =expression( "sorted by "%up%"avg_log2FC and "%up%"p_val"))
   print(p)
   ggsave(filename = paste0("./03_plots/3_DEG_Analysis_MainCluster/HeatMap_Single_MAST_1-100_",c,"_downregulated.png"),
          p,width = 3, height = 5,dpi = 400, bg="transparent")
   rm(NPC_ALL_TRANSFORMED_sub)
 }
+#### Printing HeatMaps with Top10 Upregulated or Downregulated Genes defined by MAST, per animal
 
 for (c in a){
   NPC_ALL_TRANSFORMED_sub<-subset(NPC_ALL_TRANSFORMED, mouseRNA.main==c)
@@ -150,11 +158,12 @@ for (c in a){
   MAST<-read.csv(paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single_MAST",c,".csv"))
   MAST<-MAST%>%mutate(pct.diff=(pct.1-pct.2))%>%arrange(desc(avg_log2FC),p_val)
   
-  p<-DoHeatmap(NPC_ALL_TRANSFORMED_sub, assay = "RNA",slot = "scale.data", features = c(unique(MAST$X[1:100])),
-               draw.lines = T,lines.width = NULL,label = T,angle= 0, hjust= 0.5,vjust = -2.5,size = 2,
+  p<-DoHeatmap(NPC_ALL_TRANSFORMED_sub, assay = "RNA",slot ="scale.data", features = c(unique(MAST$X[1:100])),
+               draw.lines = T,lines.width = NULL,label = T,angle= 0, hjust= 0.5,vjust = -2.5,size = 1,
                group.bar =T, group.colors = c("#aaceff","#90bff9","#addec6","#99cc99"))+
     scale_fill_viridis_c()+
-    theme(plot.title = element_text(size =6,hjust = 0.5, vjust = -8),
+    theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "mm"),
+      plot.title = element_text(size =6,hjust = 0.5, vjust = -8),
           plot.subtitle = element_text(size= 4.5,hjust = 0.5, vjust = -7),
           axis.text.y.left = element_text(size = 3.5),
           legend.justification = "top", 
@@ -171,10 +180,11 @@ for (c in a){
   MAST<-MAST%>%mutate(pct.diff=(pct.1-pct.2))%>%arrange(avg_log2FC,p_val)
   
   p<-DoHeatmap(NPC_ALL_TRANSFORMED_sub, assay = "RNA",slot = "scale.data", features = c(unique(MAST$X[1:100])),
-               draw.lines = T,lines.width = NULL,label = T,angle= 0, hjust= 0.5,vjust = -2.5,size = 2,
+               draw.lines = T,lines.width = NULL,label = T,angle= 0, hjust= 0.5,vjust = -2.5,size = 1,
                group.bar =T, group.colors = c("#aaceff","#90bff9","#addec6","#99cc99"))+
     scale_fill_viridis_c()+
-    theme(plot.title = element_text(size =6,hjust = 0.5, vjust = -8),
+    theme(plot.margin = margin(0.5,0.5,0.5,0.5, "mm"),
+          plot.title = element_text(size =6,hjust = 0.5, vjust = -8),
           plot.subtitle = element_text(size= 4.5,hjust = 0.5, vjust = -7),
           axis.text.y.left = element_text(size = 3.5),
           legend.justification = "top", 
@@ -182,66 +192,63 @@ for (c in a){
           legend.key.height= unit(0.2, 'cm'), 
           legend.key.width= unit(0.1, 'cm'),
           legend.text = element_text(size=4))+
-    labs(title= paste0("TOP100 Upregulated Genes in ",c),
+    labs(title= paste0("TOP100 Downregulated Genes in ",c),
          subtitle =expression( "sorted by "%up%"avg_log2FC and "%up%"p_val"))
   print(p)
   ggsave(filename = paste0("./03_plots/3_DEG_Analysis_MainCluster/HeatMap_Single_MAST_1-100_",c,"_downregulated_bysex.png"), 
          p,width = 3, height = 5,dpi = 400, bg="transparent")
   rm(NPC_ALL_TRANSFORMED_sub)
 }
-
+#### Printing VlnPlots per Cluster with Top10 Upregulated or Downregulated Genes defined by MAST
 for (c in a){
   Idents(NPC_ALL_TRANSFORMED) <- "celltype.stim"
   Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting2)
   MAST<-read.csv(paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single_MAST",c,".csv"))
   MAST<-MAST%>%mutate(pct.diff=(pct.1-pct.2))%>%arrange(desc(avg_log2FC),p_val)
-  p<-VlnPlot(subset(NPC_ALL_TRANSFORMED, mouseRNA.main== c), features =c(unique(MAST$X[1:10])), 
-             assay= "RNA", layer= "scale.data",log = T, stack = T,flip = F, fill.by = "ident")+
+  x<-subset(NPC_ALL_TRANSFORMED, mouseRNA.main== c)
+  p<-VlnPlot(x, features =c(unique(MAST$X[1:10])), 
+             assay= "RNA", layer= "data",log = T, stack = T,flip = F, fill.by = "ident")+
+    geom_jitter(shape=16, position=position_jitter(0.1),size =0.02,alpha= 0.5)+
     theme_classic()+NoLegend()+
-    theme(axis.title.y = element_blank(),
+    theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "mm"),
+          axis.title.y = element_blank(),
           text = element_text(size = 8),
-          axis.text.x.bottom = element_text(size =4),
+          axis.text.x.bottom = element_text(size =5),
           plot.title = element_text(size = 8),
           plot.subtitle = element_text(size= 5))+
     scale_y_discrete(limits= c(paste0(c,"_EtOH"), paste0(c,"_TAM")),
                      labels = c("EtOH",  "TAM"))+
     labs(title= paste0("TOP10 Upregulated Genes in ",c),
          subtitle =expression( "sorted by "%down%"avg_log2FC and "%up%"p_val"),
-         x= "Scaled Expression")+
+         x= "Expression as log(Normalized Counts)")+
     scale_fill_manual(values=c("#90bff9","#99cc99"))
   print(p)
   ggsave(filename = paste0("./03_plots/3_DEG_Analysis_MainCluster/VlnPlot_Single_MAST_1-10_",c,"_upregulated.png"), 
          p,width = 7, height = 2.75,dpi = 400, bg="transparent")
   
   MAST<-MAST%>%mutate(pct.diff=(pct.1-pct.2))%>%arrange(avg_log2FC,p_val)
-  p<-VlnPlot(subset(NPC_ALL_TRANSFORMED, mouseRNA.main== c), features =c(unique(MAST$X[1:10])), 
-             assay= "RNA", layer= "scale.data",log = T, stack = T,flip = F, fill.by = "ident")+
+  p<-VlnPlot(x, features =c(unique(MAST$X[1:10])), 
+             assay= "RNA", layer= "data",log = T, stack = T,flip = F, fill.by = "ident")+
+    geom_jitter(shape=16, position=position_jitter(0.1),size =0.02,alpha= 0.5)+
     theme_classic()+NoLegend()+
-    theme(axis.title.y = element_blank(),
+    theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "mm"),
+          axis.title.y = element_blank(),
           text = element_text(size = 8),
-          axis.text.x.bottom = element_text(size =4),
+          axis.text.x.bottom = element_text(size =5),
           plot.title = element_text(size = 8),
           plot.subtitle = element_text(size= 5))+
     scale_y_discrete(limits= c(paste0(c,"_EtOH"), paste0(c,"_TAM")),
                      labels = c("EtOH",  "TAM"))+
     labs(title= paste0("TOP10 Downregulated Genes in ",c),
          subtitle = expression("sorted by "%up%"avg_log2FC and "%up%"p_val"),
-         x= "Scaled Expression")+
+         x= "Expression as log(Normalized Counts)")+
     scale_fill_manual(values=c("#90bff9","#99cc99"))
   print(p)
   ggsave(filename = paste0("./03_plots/3_DEG_Analysis_MainCluster/VlnPlot_Single_MAST_1-10_",c,"_downregulated.png"), 
          p,width = 7, height = 2.75,dpi = 400, bg="transparent")
   
 }
-
-
-# png(paste0("./03_plots/3_DEG_Analysis_MainCluster/EnhancedVolcano_Single_Limma",c,".png"))
-# p<-  EnhancedVolcano(single_l.de,lab = rownames(single_l.de), x = "avg_log2FC", y = "p_val", pCutoffCol = "p_val_adj", pCutoff = 1e-05, FCcutoff = 0.5 ,
-#                      title = paste0("DE ",c," TAM vs EtOH"), 
-#                      caption = 'FC cutoff: 0.5; p-value cutoff: p_val_adj<1e-05')
-# print(p)
-# dev.off()
-
+#### printing the Enhanced Volcano Plot with FindMarkers MAST
 for (c in a){
   MAST<-read.csv(paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single_MAST",c,".csv"))
   png(paste0("./03_plots/3_DEG_Analysis_MainCluster/EnhancedVolcano_Single_MAST_",c,".png"))

@@ -49,18 +49,18 @@ library(EnhancedVolcano)
 library(readr)
 library(mmtable2)
 library(gt)
-source("02_r_scripts/malat1_function.R")
-source("02_r_scripts/VlnPlot_Function.R") 
+source("02_r_scripts/Function_Malat1.R")
+source("02_r_scripts/Function_VlnPlot.R") 
 set.seed(42)
 #### Load Input Data ####
 ### Results from FK44.1_COUNT_2_0_TRANSFORM and CLUSTERING
 ### SoupX, QC, SCT, Integration, Clustering, Annotation, Removal of Clusters with low cell numbers
 #NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds")
-#NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter.rds")
-#y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
-#DefaultAssay(NPC_ALL_TRANSFORMED) <-"SCT"
-#NPC_ALL_TRANSFORMED <- PrepSCTFindMarkers(NPC_ALL_TRANSFORMED)
-#saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter_PrepSCT.rds")
+# NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter.rds")
+# y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
+# DefaultAssay(NPC_ALL_TRANSFORMED) <-"SCT"
+# NPC_ALL_TRANSFORMED <- PrepSCTFindMarkers(NPC_ALL_TRANSFORMED)
+# saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter_PrepSCT.rds")
 NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter_PrepSCT.rds")
 y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
 
@@ -93,14 +93,14 @@ Endo_Marker <-c("Id3","Ptprb","Pecam1","Egfl7","Gng11","Flt1","Cldn5","Adgrf5") 
 Hep_Marker <-c("Ass1","Orm1","Apoa1","Apoa2","Alb","Aldh6a1") #,"Ambp"
 Canonical_ClusterMarker <-unique(c(Leukocyte_Marker, T_Marker, NK_Marker, B_Marker, myeloid_Marker, Macro_Marker, KC_Marker ,Mono_Marker, Neutro_Marker, Fibro_Marker, HSC_Marker, Endo_Marker, Hep_Marker))
 
-#Brigit defined these in her MA Thesis for comparison with PDAC pre-met signaling
-Birgit_PDAC<-c("Saa1","Saa2","9530077C05Rik","Prtn3","Prm2","Lcn2","Igdcc4","Ptgds","Orm3","Isyna1","Mt2","Mt1","Timp1","Cxcl14","Cxcl1","Apcs","Socs3","Orm1","Il1rn","Hp","Fga",
-               "Il1r1","Fgb","Fgg","Saa3","Col15a1","Cx3cr1","Fn1","Tnfrsf1a","Stat3","Pros1","Myd88","Fas","Irak4","Il6st","Crp","Akt1","Rela","Fbln5","E2f1","Ecm1","Col3a1","Apoa1",
-               "Col1a2","Fabp1","Col1a1","Ccl2","Alb","Serpina1e","Krt23","Ugt2b38","Elovl3","Cyp4a12a","Selenbp2","Cyp4a12b","Slco1a1","Fmo3")
-
-# The Hepatic Pre-Metastatic Niche, Ormseth, 2022 Cancers, https://www.mdpi.com/2072-6694/14/15/3731
-Ormseth_2022_PrimTumor<-c("Timp1","Vegfa","Csf3","Ccl2","Il6","Hspa5","Cd44","Itgbl1","Cxcl1","Cxcl12") #,"Ccl15"
-Ormseth_2022_ResponsetoTumor<-c("Cxcr4","Hgf","Cxcr2","Ly6g","Ly6c1","Prok2","Ccr1","Cd34","Mmp2","Mmp9","Tgfb1","Smad7","Ccl20","S100a6","Klrk1","Lamp1","Tnf","Ifng","Cxcl15","Itgam","Tjp1","Cldn5","Cdh5")
+# #Brigit defined these in her MA Thesis for comparison with PDAC pre-met signaling
+# Birgit_PDAC<-c("Saa1","Saa2","9530077C05Rik","Prtn3","Prm2","Lcn2","Igdcc4","Ptgds","Orm3","Isyna1","Mt2","Mt1","Timp1","Cxcl14","Cxcl1","Apcs","Socs3","Orm1","Il1rn","Hp","Fga",
+#                "Il1r1","Fgb","Fgg","Saa3","Col15a1","Cx3cr1","Fn1","Tnfrsf1a","Stat3","Pros1","Myd88","Fas","Irak4","Il6st","Crp","Akt1","Rela","Fbln5","E2f1","Ecm1","Col3a1","Apoa1",
+#                "Col1a2","Fabp1","Col1a1","Ccl2","Alb","Serpina1e","Krt23","Ugt2b38","Elovl3","Cyp4a12a","Selenbp2","Cyp4a12b","Slco1a1","Fmo3")
+# 
+# # The Hepatic Pre-Metastatic Niche, Ormseth, 2022 Cancers, https://www.mdpi.com/2072-6694/14/15/3731
+# Ormseth_2022_PrimTumor<-c("Timp1","Vegfa","Csf3","Ccl2","Il6","Hspa5","Cd44","Itgbl1","Cxcl1","Cxcl12") #,"Ccl15"
+# Ormseth_2022_ResponsetoTumor<-c("Cxcr4","Hgf","Cxcr2","Ly6g","Ly6c1","Prok2","Ccr1","Cd34","Mmp2","Mmp9","Tgfb1","Smad7","Ccl20","S100a6","Klrk1","Lamp1","Tnf","Ifng","Cxcl15","Itgam","Tjp1","Cldn5","Cdh5")
 
 
 
@@ -109,55 +109,148 @@ Ormseth_2022_ResponsetoTumor<-c("Cxcr4","Hgf","Cxcr2","Ly6g","Ly6c1","Prok2","Cc
 Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.main"
 Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting)
 z<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
+# 
+# p<-DoHeatmap(NPC_ALL_TRANSFORMED, assay = "RNA",slot = "scale.data", features = Orseth_2022_ResponsetoTumor,
+#              draw.lines = T,lines.width = NULL,
+#              label = F, group.bar =T)+
+#   scale_fill_viridis_c()+
+#   theme(axis.text.y.left = element_text(size = 2.8),
+#         legend.justification = "top", 
+#         legend.title = element_text(size=6),
+#         legend.key.height= unit(0.2, 'cm'), 
+#         legend.key.width= unit(0.1, 'cm'),
+#         legend.text = element_text(size=4))
+# print(p)
+# ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_Canonnical_HeatMap_woMALAT_Filter.png"), p,width = 3.25, height = 3.25,dpi = 1200, bg="transparent")
+# 
+# 
+# Idents(NPC_ALL_TRANSFORMED) <- "seurat_clusters"
+# Idents(NPC_ALL_TRANSFORMED) <- "celltype.stim"
+# Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting3)
+# p<-DoHeatmap(NPC_ALL_TRANSFORMED, assay = "RNA",slot = "scale.data", features = Birgit_PDAC,
+#              draw.lines = T,lines.width = NULL,
+#              label = F, group.bar =T)+
+#   scale_fill_viridis_c()+
+#   theme(axis.text.y.left = element_text(size = 5),
+#         legend.justification = "top", 
+#         legend.title = element_text(size=6),
+#         legend.key.height= unit(0.2, 'cm'), 
+#         legend.key.width= unit(0.1, 'cm'),
+#         legend.text = element_text(size=5))
+# print(p)
+# #ggsave(filename = paste0("./03_plots/2_Clustering/HeatMap_Birgits_PDAC_Genes.png"), p,width = 8, height = 4,dpi = 1200, bg="transparent")
+# p<-VlnPlot(subset(NPC_ALL_TRANSFORMED,mouseRNA.main =="Hepatocytes"), 
+#            features = Ormseth_2022_PrimTumor, 
+#            assay= "RNA", 
+#            layer= "data",
+#            log = F, 
+#            stack = T,
+#            flip = F, 
+#            fill.by = "ident",
+#            split.by="stim")+
+#   coord_cartesian( ylim=c(1,18),clip = "off")+
+#   labs(title= "ECM Remodelling Genes",
+#        x= "Expression Level", y="Cell Type")+scale_fill_manual(values=c("#90bff9","#99cc99"))+
+#   theme_classic()+
+#   theme(plot.title = element_text(size=18.5,hjust=0.5),
+#         axis.title=element_text(size=18))
+# print(p)
+# 
+# p<-VlnPlot(NPC_ALL_TRANSFORMED, 
+#            features = Orseth_2022_ResponsetoTumor, 
+#            assay= "RNA", 
+#            layer= "data",
+#            log = T, 
+#            stack = T,
+#            flip = F, 
+#            fill.by = "ident",
+#            split.by="stim")+
+#   coord_cartesian( ylim=c(1,18),clip = "off")+
+#   labs(title= "ECM Remodelling Genes",
+#        x= "Expression Level", y="Cell Type")+scale_fill_manual(values=c("#90bff9","#99cc99"))+
+#   theme_classic()+
+#   theme(plot.title = element_text(size=18.5,hjust=0.5),
+#         axis.title=element_text(size=18))
+# print(p)
+# 
+# p<-VlnPlot(NPC_ALL_TRANSFORMED, 
+#            features = Birgit_PDAC, 
+#            assay= "RNA", 
+#            layer= "data",
+#            log = T, 
+#            stack = T,
+#            flip = F, 
+#            fill.by = "ident",
+#            split.by="stim")+
+#   coord_cartesian( ylim=c(1,18),clip = "off")+
+#   labs(title= "ECM Remodelling Genes",
+#        x= "Expression Level", y="Cell Type")+scale_fill_manual(values=c("#90bff9","#99cc99"))+
+#   theme_classic()+
+#   theme(plot.title = element_text(size=18.5,hjust=0.5),
+#         axis.title=element_text(size=18))
+# print(p)
+# ggsave(filename = paste0("./03_plots/2_Clustering/VlnPlot_Birgirts_PDACS.png"), p,width = 16, height = 3, dpi = 600,bg="transparent")
+# #### Test some potential interesting marker stuff #####
+# Idents(NPC_ALL_TRANSFORMED) <- "celltype.stim"
+# Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting2)
+# 
+# p<-DotPlot(NPC_ALL_TRANSFORMED,  assay = "RNA", features =unique(Ormseth_2022_ResponsetoTumor),cols=c("pink","green"))+
+#   RotatedAxis()+
+#   scale_size(breaks = c(0, 25, 50, 75, 100),range(0,10))+
+#   scale_colour_distiller(palette="Blues", trans="reverse")+
+#   guides(colour = guide_colourbar(reverse = TRUE))+
+#   theme(panel.background = element_rect(fill = "gray95",colour="black", linewidth = 1),
+#         axis.line.y.left =element_blank(),
+#         axis.title.x = element_text(size = 10),
+#         axis.title.y = element_text(size = 10),
+#         axis.text.y.left = element_text(size = 8),
+#         axis.text.x.bottom = element_text(size = 8),
+#         legend.justification = "top", 
+#         legend.key.height= unit(0.4, 'cm'), 
+#         legend.key.width= unit(0.2, 'cm'),
+#         legend.title = element_text(size=8),
+#         legend.text = element_text(size=7),
+#         axis.line.x.bottom =element_blank(),
+#         axis.text.x =element_text(angle = 90,vjust = 0.5))+
+#   xlab("Marker genes")+
+#   ylab("Cell Type")
+# print(p)
+# #ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_DotPlot_Cytokines Test_woMALAT_Filter.png"), p,width = 12, height = 3, dpi = 800,bg="transparent")
 
-p<-DoHeatmap(NPC_ALL_TRANSFORMED, assay = "RNA",slot = "scale.data", features = Orseth_2022_ResponsetoTumor,
-             draw.lines = T,lines.width = NULL,
-             label = F, group.bar =T)+
-  scale_fill_viridis_c()+
-  theme(axis.text.y.left = element_text(size = 2.8),
-        legend.justification = "top", 
-        legend.title = element_text(size=6),
-        legend.key.height= unit(0.2, 'cm'), 
-        legend.key.width= unit(0.1, 'cm'),
-        legend.text = element_text(size=4))
-print(p)
-ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_Canonnical_HeatMap_woMALAT_Filter.png"), p,width = 3.25, height = 3.25,dpi = 1200, bg="transparent")
-
-
-Idents(NPC_ALL_TRANSFORMED) <- "seurat_clusters"
+#### Do Stacked VlnPlot ofSome special Fatty Genes####
 Idents(NPC_ALL_TRANSFORMED) <- "celltype.stim"
-Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting3)
-p<-DoHeatmap(NPC_ALL_TRANSFORMED, assay = "RNA",slot = "scale.data", features = Birgit_PDAC,
-             draw.lines = T,lines.width = NULL,
-             label = F, group.bar =T)+
-  scale_fill_viridis_c()+
-  theme(axis.text.y.left = element_text(size = 5),
-        legend.justification = "top", 
-        legend.title = element_text(size=6),
-        legend.key.height= unit(0.2, 'cm'), 
-        legend.key.width= unit(0.1, 'cm'),
-        legend.text = element_text(size=5))
-print(p)
-#ggsave(filename = paste0("./03_plots/2_Clustering/HeatMap_Birgits_PDAC_Genes.png"), p,width = 8, height = 4,dpi = 1200, bg="transparent")
-p<-VlnPlot(subset(NPC_ALL_TRANSFORMED,mouseRNA.main =="Hepatocytes"), 
-           features = Ormseth_2022_PrimTumor, 
+Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting2)
+Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.main"
+Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting)
+
+APP <-c("Alb","Saa1","Hp","Fgg")
+Recruitment <-c("Vegfa","Cxcl1","Csf1","Vcam1","Cxcl2","Ccr2") #"Cxcl12",
+ECM <-c("Serpina1e","Tgfb1","Col1a1","Mmp2","Fn1","Timp1","Mmp9")#,"Des","Acta2"
+Fatty <-c("Fabp1","Apoa1","Apoa2")
+DefaultAssay(NPC_ALL_TRANSFORMED) <-"RNA"
+p<-VlnPlot(NPC_ALL_TRANSFORMED, 
+           features = APP, 
            assay= "RNA", 
            layer= "scale.data",
-           log = F, 
+           log = T, 
            stack = T,
            flip = F, 
            fill.by = "ident",
-           split.by="stim")+
-  coord_cartesian( ylim=c(1,18),clip = "off")+
-  labs(title= "ECM Remodelling Genes",
+           split.by="stim",
+           combine=T)+
+  coord_cartesian( ylim=c(1,9),clip = "off")+
+  labs(title= "Acute Phase Response Genes",
        x= "Expression Level", y="Cell Type")+scale_fill_manual(values=c("#90bff9","#99cc99"))+
   theme_classic()+
-  theme(plot.title = element_text(size=18.5,hjust=0.5),
-        axis.title=element_text(size=18))
+  theme(plot.title = element_text(size=9.5,hjust=0.5),
+        axis.title=element_text(size=9))
 print(p)
+ggsave(filename = paste0("./03_plots/2_Clustering/Poster_VlnPlot_APP_woMALAT_Filter.png"),
+       p,width =(1+(length(unique(APP))*1.5)),
+       height = 3.5, dpi = 600,bg="transparent")
 
 p<-VlnPlot(NPC_ALL_TRANSFORMED, 
-           features = Orseth_2022_ResponsetoTumor, 
+           features = ECM, 
            assay= "RNA", 
            layer= "scale.data",
            log = T, 
@@ -165,31 +258,51 @@ p<-VlnPlot(NPC_ALL_TRANSFORMED,
            flip = F, 
            fill.by = "ident",
            split.by="stim")+
-  coord_cartesian( ylim=c(1,18),clip = "off")+
+  coord_cartesian( ylim=c(1,9),clip = "off")+
   labs(title= "ECM Remodelling Genes",
        x= "Expression Level", y="Cell Type")+scale_fill_manual(values=c("#90bff9","#99cc99"))+
   theme_classic()+
-  theme(plot.title = element_text(size=18.5,hjust=0.5),
-        axis.title=element_text(size=18))
+  theme(plot.title = element_text(size=9.5,hjust=0.5),
+        axis.title=element_text(size=9))
 print(p)
+ggsave(filename = paste0("./03_plots/2_Clustering/Poster_VlnPlot_ECM_woMALAT_Filter.png"), p,width = ((length(unique(ECM))*1.5)), height = 3.5, dpi = 600,bg="transparent")
 
 p<-VlnPlot(NPC_ALL_TRANSFORMED, 
-           features = Birgit_PDAC, 
+           features = Recruitment, 
            assay= "RNA", 
-           layer= "scale.data",
+           layer= "data",
            log = T, 
            stack = T,
            flip = F, 
            fill.by = "ident",
            split.by="stim")+
-  coord_cartesian( ylim=c(1,18),clip = "off")+
-  labs(title= "ECM Remodelling Genes",
+  coord_cartesian( ylim=c(1,9),clip = "off")+
+  labs(title= "Immune Cell Recruitment",
        x= "Expression Level", y="Cell Type")+scale_fill_manual(values=c("#90bff9","#99cc99"))+
   theme_classic()+
-  theme(plot.title = element_text(size=18.5,hjust=0.5),
-        axis.title=element_text(size=18))
+  theme(plot.title = element_text(size=9.5,hjust=0.5),
+        axis.title=element_text(size=9))
 print(p)
-ggsave(filename = paste0("./03_plots/2_Clustering/VlnPlot_Birgirts_PDACS.png"), p,width = 16, height = 3, dpi = 600,bg="transparent")
+ggsave(filename = paste0("./03_plots/2_Clustering/Poster_VlnPlot_Recruitment_woMALAT_Filter.png"), p,width = (1+length(unique(Recruitment))*1.5), height = 3.5, dpi = 600,bg="transparent")
+
+p<-VlnPlot(NPC_ALL_TRANSFORMED, 
+           features = Fatty, 
+           assay= "RNA", 
+           layer= "data",
+           log = T, 
+           stack = T,
+           flip = F, 
+           fill.by = "ident",
+           split.by="stim")+
+  coord_cartesian( ylim=c(1,9),clip = "off")+
+  labs(title= "Lipid Metabolism",
+       x= "Expression Level", y="Cell Type")+scale_fill_manual(values=c("#90bff9","#99cc99"))+
+  theme_classic()+
+  theme(plot.title = element_text(size=9.5,hjust=0.5),
+        axis.title=element_text(size=9))
+print(p)
+ggsave(filename = paste0("./03_plots/2_Clustering/Poster_VlnPlot_Fatty_woMALAT_Filter.png"), p,width = (1+length(unique(Fatty))*1.5), height = 3.5, dpi = 600,bg="transparent")
+
 #### Do DotPlot of manually assgined Canonical Markers
 Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.main"
 Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting)
@@ -207,7 +320,7 @@ p<-DotPlot(NPC_ALL_TRANSFORMED,  assay = "RNA", scale= T, features =unique(Canon
   annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker)))-length(KC_Marker)/2), label = "KC",size=4)+
   annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker, Mono_Marker)))-length(Mono_Marker)/2), label = "Mono",size=4)+
   annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker,Mono_Marker,Neutro_Marker)))-length(Neutro_Marker)/2), label = "N",size=4)+
-  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker,Mono_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker)))-(length(HSC_Marker)+length(Fibro_Marker))/2), label = "HSC",size=4)+
+  annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker,Mono_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker)))-(length(HSC_Marker)+length(Fibro_Marker))/2), label = "Fibro",size=4)+
   annotate("text", y = 9.75, x = 0.5+(length(unique(c(Leukocyte_Marker, T_Marker,NK_Marker,B_Marker,myeloid_Marker,Macro_Marker,KC_Marker,Mono_Marker,Neutro_Marker,Fibro_Marker,HSC_Marker,Endo_Marker)))-length(Endo_Marker)/2), label = "Endo",size=4)+
   annotate("text", y = 9.75, x = 0.5+(length(unique(Canonical_ClusterMarker))-length(Hep_Marker)/2), label = "Hep",size=4)+
   guides(colour = guide_colourbar(reverse = TRUE))+
@@ -242,76 +355,47 @@ p<-DotPlot(NPC_ALL_TRANSFORMED,  assay = "RNA", scale= T, features =unique(Canon
 print(p)
 ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_DotPlot_Canonical_Markers_wenigerGene_woMALAT_Filter.png"), p,width = 16, height = 4, dpi = 600,bg="transparent")
 
-
-
-
-
-#### Test some potential interesting marker stuff #####
-Idents(NPC_ALL_TRANSFORMED) <- "celltype.stim"
-Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting2)
-
-p<-DotPlot(NPC_ALL_TRANSFORMED,  assay = "RNA", features =unique(Ormseth_2022_ResponsetoTumor),cols=c("pink","green"))+
-  RotatedAxis()+
-  scale_size(breaks = c(0, 25, 50, 75, 100),range(0,10))+
-  scale_colour_distiller(palette="Blues", trans="reverse")+
-  guides(colour = guide_colourbar(reverse = TRUE))+
-  theme(panel.background = element_rect(fill = "gray95",colour="black", linewidth = 1),
-        axis.line.y.left =element_blank(),
-        axis.title.x = element_text(size = 10),
-        axis.title.y = element_text(size = 10),
-        axis.text.y.left = element_text(size = 8),
-        axis.text.x.bottom = element_text(size = 8),
-        legend.justification = "top", 
-        legend.key.height= unit(0.4, 'cm'), 
-        legend.key.width= unit(0.2, 'cm'),
-        legend.title = element_text(size=8),
-        legend.text = element_text(size=7),
-        axis.line.x.bottom =element_blank(),
-        axis.text.x =element_text(angle = 90,vjust = 0.5))+
-  xlab("Marker genes")+
-  ylab("Cell Type")
-print(p)
-#ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_DotPlot_Cytokines Test_woMALAT_Filter.png"), p,width = 12, height = 3, dpi = 800,bg="transparent")
-
 ######################## Find Conserved Markers in Clusters across Stimulation ########
-Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.main"
-Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting)
-a<- c("Hepatocytes")
-for(a in NPC_ALL_TRANSFORMED$mouseRNA.main){
-  p<-DoHeatmap(subset(subset(NPC_ALL_TRANSFORMED,mouseRNA.main == paste0(a))),
-               assay = "RNA",slot = "scale.data", features = Ormseth_2022_ResponsetoTumor,
-               draw.lines = T,lines.width = NULL,
-               label = F, group.bar =T)+
-    scale_fill_viridis_c()+
-    theme(axis.text.y.left = element_text(size = 2.8),
-          legend.justification = "top", 
-          legend.title = element_text(size=6),
-          legend.key.height= unit(0.2, 'cm'), 
-          legend.key.width= unit(0.1, 'cm'),
-          legend.text = element_text(size=4))
-  print(p)
-}
+# Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.main"
+# Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting)
+# #a<- c("Hepatocytes")
+# for(a in NPC_ALL_TRANSFORMED$mouseRNA.main){
+#   p<-DoHeatmap(subset(subset(NPC_ALL_TRANSFORMED,mouseRNA.main == paste0(a))),
+#                assay = "RNA",slot = "scale.data", features = Ormseth_2022_ResponsetoTumor,
+#                draw.lines = T,lines.width = NULL,
+#                label = F, group.bar =T)+
+#     scale_fill_viridis_c()+
+#     theme(axis.text.y.left = element_text(size = 2.8),
+#           legend.justification = "top", 
+#           legend.title = element_text(size=6),
+#           legend.key.height= unit(0.2, 'cm'), 
+#           legend.key.width= unit(0.1, 'cm'),
+#           legend.text = element_text(size=4))
+#   print(p)
+# }
 ########
 ConservedMarkers5<-data.frame()
 ConservedMarkers10<-data.frame()
 ConservedMarkers20<-data.frame()
 
 b<-unique(NPC_ALL_TRANSFORMED@meta.data$mouseRNA.main)
-for (c in b){
-  markers <- FindConservedMarkers(NPC_ALL_TRANSFORMED, assay = "RNA", ident.1 = c, grouping.var = "sample",verbose = T)
-  write.csv(markers,paste0("./99_other/2_Clustering/ConservedMarkers_",c,"_woMALAT_Filter.csv"))
-  markers5<-data.frame(cluster=c,genes=rownames(markers)[1:5])
-  ConservedMarkers5<-rbind(ConservedMarkers5,markers5)
-  markers10<-data.frame(cluster=c,genes=rownames(markers)[1:10])
-  ConservedMarkers10<-rbind(ConservedMarkers10,markers10)
-  markers20<-data.frame(cluster=c,genes=rownames(markers)[1:20])
-  ConservedMarkers20<-rbind(ConservedMarkers20,markers20)
-  print(paste0("I saved conserved Markers for ",c,"."))
-}
-write.csv(ConservedMarkers5,paste0("./99_other/2_Clustering/ConservedMarkers_Top5_woMALAT_Filter.csv"))
-write.csv(ConservedMarkers10,paste0("./99_other/2_Clustering/ConservedMarkers_Top10_woMALAT_Filter.csv"))
-write.csv(ConservedMarkers20,paste0("./99_other/2_Clustering/ConservedMarkers_Top20_woMALAT_Filter.csv"))
+#### Calculate Markers and save them ####
+# for (c in b){
+#   markers <- FindConservedMarkers(NPC_ALL_TRANSFORMED, assay = "RNA", ident.1 = c, grouping.var = "sample",verbose = T)
+#   write.csv(markers,paste0("./99_other/2_Clustering/ConservedMarkers_",c,"_woMALAT_Filter.csv"))
+#   markers5<-data.frame(cluster=c,genes=rownames(markers)[1:5])
+#   ConservedMarkers5<-rbind(ConservedMarkers5,markers5)
+#   markers10<-data.frame(cluster=c,genes=rownames(markers)[1:10])
+#   ConservedMarkers10<-rbind(ConservedMarkers10,markers10)
+#   markers20<-data.frame(cluster=c,genes=rownames(markers)[1:20])
+#   ConservedMarkers20<-rbind(ConservedMarkers20,markers20)
+#   print(paste0("I saved conserved Markers for ",c,"."))
+# }
+# write.csv(ConservedMarkers5,paste0("./99_other/2_Clustering/ConservedMarkers_Top5_woMALAT_Filter.csv"))
+# write.csv(ConservedMarkers10,paste0("./99_other/2_Clustering/ConservedMarkers_Top10_woMALAT_Filter.csv"))
+# write.csv(ConservedMarkers20,paste0("./99_other/2_Clustering/ConservedMarkers_Top20_woMALAT_Filter.csv"))
 
+#### Load calculated and saved Markers####
 ConservedMarkers5<- read.csv(paste0("./99_other/2_Clustering/ConservedMarkers_Top5_woMALAT_Filter.csv"))
 ConservedMarkers10 <-read.csv(paste0("./99_other/2_Clustering/ConservedMarkers_Top10_woMALAT_Filter.csv"))
 ConservedMarkers20 <-read.csv(paste0("./99_other/2_Clustering/ConservedMarkers_Top20_woMALAT_Filter.csv"))
@@ -321,7 +405,141 @@ ConservedMarkers5<-ConservedMarkers5[order(factor(ConservedMarkers5$cluster, lev
 ConservedMarkers10<-ConservedMarkers10[order(factor(ConservedMarkers10$cluster, levels=myClusterSorting)),]
 ConservedMarkers20<-ConservedMarkers20[order(factor(ConservedMarkers20$cluster, levels=myClusterSorting)),]
 
-#### Do HeatMap of Marker 5 Marker genes per Clusters ####
+
+#### Try to get Markers from Panglao DB to have independent cluster markers to prove my clusters ####
+#Code from internet to get human genes to mouse gene conversion
+mouse_human_genes <- read.csv("http://www.informatics.jax.org/downloads/reports/HOM_MouseHumanSequence.rpt",sep="\t")
+# separate human and mouse
+mouse <- split.data.frame(mouse_human_genes,mouse_human_genes$Common.Organism.Name)[[2]]
+human <- split.data.frame(mouse_human_genes,mouse_human_genes$Common.Organism.Name)[[1]]
+# remove some columns
+mouse <- mouse[,c(1,4)]
+human <- human[,c(1,4)]
+# merge the 2 datasets  (note that the human list is longer than the mouse one)
+mh_data <- merge.data.frame(mouse,human,by = "DB.Class.Key",all.y = TRUE)
+mh_data<-mh_data%>%arrange(desc(Symbol.y))
+head(mh_data)
+#Load Panglao Markers
+PanglaoMarkers <- read.table("./99_other/PanglaoDB_markers_27_Mar_2020.tsv",h=T,sep="\t",quote="")
+#Shrink Dataset to contain right species, necessary cell types and organs and some selection in sensitivity/canonical marker
+PanglaoMarkers <-PanglaoMarkers%>%
+  filter(species == "Mm" | species == "Mm Hs" & sensitivity_mouse > 0.01,
+         cell.type !="Adipocytes",
+         cell.type !="Chondrocytes",
+         cell.type !="Plateletes",
+         !is.na(sensitivity_mouse ),
+         !is.na(specificity_mouse),
+         !is.na(canonical.marker),
+         canonical.marker==1,
+         organ == "Liver" |organ == "Immune system" |
+           organ == "Blood" |organ == "Connective tissue" |
+           organ=="Epithelium"|organ == "Vasculature" |organ == "Other")
+#Get the human genes names from Panglao transformed to mouseGene names
+PanglaoMarkers[,"mouseGene"] <- NA
+for (g in mh_data$Symbol.y){
+  if (g %in% PanglaoMarkers$official.gene.symbol){
+    pos_in_Pang<-grep(g,PanglaoMarkers$official.gene.symbol)
+    pos_in_mh <-match(g,mh_data$Symbol.y)
+    for(p in pos_in_Pang){
+      PanglaoMarkers$mouseGene[pos_in_Pang]<-(mh_data$Symbol.x [pos_in_mh])
+    }
+  }
+}
+#reorder columns
+PanglaoMarkers%>%select(cell.type,mouseGene,official.gene.symbol,
+                        species,organ,sensitivity_mouse,specificity_mouse,
+                        ubiquitousness.index,nicknames,product.description,
+                        gene.type,germ.layer)
+#check if there a unassigned mouseGenes
+nanana<-PanglaoMarkers%>%filter(is.na(mouseGene) )
+#### need to find mouse gene names for the nananana s ###
+write.csv(nanana,paste0("./99_other/2_Clustering/PanglaoDBMarkes_woMouseName.csv"))
+#### added mouse gene names by hand #####
+# convert the NA mousegenes with the hand filled datatable to mouseGene names
+Panglao_noNA <-read.csv("99_other/2_Clustering/PanglaoDBMarkers_manually_assigned.csv", sep = ";")
+for (g in Panglao_noNA$official.gene.symbol){
+  if (g %in% PanglaoMarkers$official.gene.symbol){
+    pos_in_Pang<-grep(g,PanglaoMarkers$official.gene.symbol)
+    pos_in_noNA <-match(g,Panglao_noNA$official.gene.symbol)
+    for(p in pos_in_Pang){
+      PanglaoMarkers$mouseGene[pos_in_Pang]<-(mh_data$Symbol.x [pos_in_noNA])
+    }
+  }
+}
+#Are there NAs left?
+nonono<-PanglaoMarkers%>%filter(is.na(mouseGene) )
+#Sort genes in Panglao bei sensitivity in mouse
+PanglaoMarkers <-PanglaoMarkers%>%
+  group_by(cell.type)%>%
+  arrange((desc(sensitivity_mouse)),.by_group = T)
+
+#PanglaoMarkers<-PanglaoMarkers%>%
+#  mutate(mouseGene = ifelse(mouseGene %in% NPC_ALL_TRANSFORMED@assays$RNA@meta.data$var.features, mh_data$Symbol.x, NA))%>%
+#  filter(!is.na(mouseGene))
+for(c in unique(PanglaoMarkers$cell.type)){
+  CP<-subset(PanglaoMarkers,PanglaoMarkers$cell.type==c)
+  p<-DoHeatmap(NPC_ALL_TRANSFORMED, assay = "RNA",slot = "scale.data", features = c(unique(CP$mouseGene)),
+               draw.lines = T,lines.width = NULL,
+               label = F, group.bar =T)+
+    scale_fill_viridis_c()+
+    theme(axis.text.y.left = element_text(size = 4),
+          legend.justification = "top", 
+          legend.title = element_text(size=6),
+          legend.key.height= unit(0.2, 'cm'), 
+          legend.key.width= unit(0.1, 'cm'),
+          legend.text = element_text(size=4))
+  print(p)
+  ggsave(filename = paste0("./03_plots/2_Clustering/ClustermarkerPanglao",c,"_woMALAT_Filter.png"),
+         p,
+         width = 3.25, 
+         height = 3.25,
+         dpi = 1200, 
+         bg="transparent")
+}
+##### Panglao Markers kinda specific but also not. need to have good metrics to select genes to represent "Canonical Cluster Markers"#
+#### I looked at PanglaoMarkers and on top of this script I defined manually marker genes per cluster. 
+#Here I want to get the product descriptions for these defined markers
+CanoMarkers_Table<-PanglaoMarkers%>%ungroup()%>%filter(mouseGene %in% Canonical_ClusterMarker)%>%
+  select(mouseGene, official.gene.symbol, product.description,cell.type)%>%
+  arrange(factor(mouseGene,levels=Canonical_ClusterMarker))%>%
+  filter(official.gene.symbol!="CD44" & official.gene.symbol!="CD40" & official.gene.symbol!="CD47" & official.gene.symbol!="CD48")%>%
+  select(mouseGene,product.description,official.gene.symbol)%>%mutate(Reference= "1")%>%
+  rename( humanGene =official.gene.symbol,Protein = product.description)
+CanoMM<-list(Leukocytes=Leukocyte_Marker,
+             `T Cells`=T_Marker,
+             `NK Cells`=NK_Marker,
+             `B Cells`=B_Marker,
+             `myeloid Cells`=myeloid_Marker,
+             Macropahges=Macro_Marker,
+             `Kupffer Cells`=KC_Marker,
+             Monocytes=Mono_Marker,
+             Neutrophils=Neutro_Marker,
+             Fibroblasts=Fibro_Marker,
+             `Hepatic Stellate Cells`= HSC_Marker,
+             `Endothelial Cells`=Endo_Marker,
+             Hepatocytes= Hep_Marker)
+MarkerFrame <-data.frame()
+
+for (e in 1:length(CanoMM)){
+  print(e)
+  print(CanoMM[[e]])
+  print(names(CanoMM[e])[1])
+  x<-data.frame(mouseGene=CanoMM[[e]], Marker.for =names(CanoMM[e])[1])
+  MarkerFrame <-rbind(MarkerFrame,x)
+}
+CanoMarkers_Table<-merge(MarkerFrame,CanoMarkers_Table, by = "mouseGene", all.x =T)%>%arrange(factor(mouseGene,levels=Canonical_ClusterMarker))%>%distinct(mouseGene,.keep_all = T)
+#### Generate nice table as output for canonical Markers
+CanoMarkers_Table%>%rename(`Murine Gene`=mouseGene,`Human Gene`=humanGene,`Marker for`=Marker.for)%>%
+  gt()%>%
+  tab_header(title = "Canonical Cluster Markers")%>%
+  tab_style(style = cell_text(color = "black", weight = "bold", align = "center"),locations = cells_title("title"))%>%
+  tab_style(style= cell_text(weight= "bold"),locations = cells_column_labels(everything()))%>%
+  opt_table_lines()%>%
+  tab_options(table.font.size="small")%>%
+  gtsave("Canonical_Markers_Table.docx",path="./03_plots/2_Clustering/")
+
+
+#### Do HeatMap of  5 Conserved Marker genes per Clusters ####
 p<-DoHeatmap(NPC_ALL_TRANSFORMED, assay = "RNA", slot = "scale.data", features = c("Ptprc",ConservedMarkers5$gene),
              draw.lines = T,lines.width = NULL,
              label = F, group.bar =T)+
@@ -385,6 +603,7 @@ p<-DotPlot(NPC_ALL_TRANSFORMED,  assay = "RNA",features =unique(ConservedMarkers
         ylab("Cell Type")
 print(p)
 ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_DotPlot5_woMALAT_Filter.png"), p,width = 12, height = 3, dpi = 800,bg="transparent")
+
 #### Do DotPLot(BubblePlot) of 1 Marker genes per Clusters ####
 p<-DotPlot(NPC_ALL_TRANSFORMED,  assay = "RNA",features =ConservedMarkers1)+
   RotatedAxis()+
@@ -408,6 +627,7 @@ p<-DotPlot(NPC_ALL_TRANSFORMED,  assay = "RNA",features =ConservedMarkers1)+
   ylab("Cell Type")
 print(p)
 ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_DotPlot1_woMALAT_Filter.png"), p,width = 8, height = 4, dpi = 800,bg="transparent")
+
 #### Do Stacked VlnPlot of 1 Marker genes per Clusters ####
 DefaultAssay(NPC_ALL_TRANSFORMED) <-"RNA"
 p<-VlnPlot(NPC_ALL_TRANSFORMED, features = ConservedMarkers1, assay= "RNA", layer= "scale.data",log = T, stack = T,flip = F, fill.by = "ident")+
@@ -416,234 +636,17 @@ p<-VlnPlot(NPC_ALL_TRANSFORMED, features = ConservedMarkers1, assay= "RNA", laye
 print(p)
 ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_VlnPlot1_woMALAT_Filter.png"), p,width = 8, height = 4, dpi = 800,bg="transparent")
 
-#### Do Stacked VlnPlot ofSome special Fatty Genes####
-Idents(NPC_ALL_TRANSFORMED) <- "celltype.stim"
-Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting2)
-Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.main"
-Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting)
-
-APP <-c("Alb","Saa1","Hp","Fgg")
-Recruitment <-c("Vegfa","Cxcl1","Csf1","Vcam1","Cxcl2","Ccr2") #"Cxcl12",
-ECM <-c("Serpina1e","Tgfb1","Col1a1","Mmp2","Fn1","Timp1","Mmp9")#,"Des","Acta2"
-Fatty <-c("Fabp1","Apoa1","Apoa2")
-DefaultAssay(NPC_ALL_TRANSFORMED) <-"RNA"
-p<-VlnPlot(NPC_ALL_TRANSFORMED, 
-           features = APP, 
-           assay= "RNA", 
-           layer= "scale.data",
-           log = T, 
-           stack = T,
-           flip = F, 
-           fill.by = "ident",
-           split.by="stim",
-           combine=T)+
-  coord_cartesian( ylim=c(1,9),clip = "off")+
-  labs(title= "Acute Phase Response Genes",
-    x= "Expression Level", y="Cell Type")+scale_fill_manual(values=c("#90bff9","#99cc99"))+
-   theme_classic()+
-  theme(plot.title = element_text(size=9.5,hjust=0.5),
-        axis.title=element_text(size=9))
-print(p)
-ggsave(filename = paste0("./03_plots/2_Clustering/Poster_VlnPlot_APP_woMALAT_Filter.png"),
-       p,width =(1+(length(unique(APP))*1.5)),
-       height = 3.5, dpi = 600,bg="transparent")
-
-p<-VlnPlot(NPC_ALL_TRANSFORMED, 
-           features = ECM, 
-           assay= "RNA", 
-           layer= "scale.data",
-           log = T, 
-           stack = T,
-           flip = F, 
-           fill.by = "ident",
-           split.by="stim")+
-  coord_cartesian( ylim=c(1,9),clip = "off")+
-  labs(title= "ECM Remodelling Genes",
-       x= "Expression Level", y="Cell Type")+scale_fill_manual(values=c("#90bff9","#99cc99"))+
-  theme_classic()+
-  theme(plot.title = element_text(size=9.5,hjust=0.5),
-        axis.title=element_text(size=9))
-print(p)
-ggsave(filename = paste0("./03_plots/2_Clustering/Poster_VlnPlot_ECM_woMALAT_Filter.png"), p,width = ((length(unique(ECM))*1.5)), height = 3.5, dpi = 600,bg="transparent")
-
-p<-VlnPlot(NPC_ALL_TRANSFORMED, 
-           features = Recruitment, 
-           assay= "RNA", 
-           layer= "scale.data",
-           log = T, 
-           stack = T,
-           flip = F, 
-           fill.by = "ident",
-           split.by="stim")+
-  coord_cartesian( ylim=c(1,9),clip = "off")+
-  labs(title= "Immune Cell Recruitment",
-       x= "Expression Level", y="Cell Type")+scale_fill_manual(values=c("#90bff9","#99cc99"))+
-  theme_classic()+
-  theme(plot.title = element_text(size=9.5,hjust=0.5),
-        axis.title=element_text(size=9))
-print(p)
-ggsave(filename = paste0("./03_plots/2_Clustering/Poster_VlnPlot_Recruitment_woMALAT_Filter.png"), p,width = (1+length(unique(Recruitment))*1.5), height = 3.5, dpi = 600,bg="transparent")
-
-p<-VlnPlot(NPC_ALL_TRANSFORMED, 
-           features = Fatty, 
-           assay= "RNA", 
-           layer= "scale.data",
-           log = T, 
-           stack = T,
-           flip = F, 
-           fill.by = "ident",
-           split.by="stim")+
-  coord_cartesian( ylim=c(1,9),clip = "off")+
-  labs(title= "Lipid Metabolism",
-       x= "Expression Level", y="Cell Type")+scale_fill_manual(values=c("#90bff9","#99cc99"))+
-  theme_classic()+
-  theme(plot.title = element_text(size=9.5,hjust=0.5),
-        axis.title=element_text(size=9))
-print(p)
-ggsave(filename = paste0("./03_plots/2_Clustering/Poster_VlnPlot_Fatty_woMALAT_Filter.png"), p,width = (1+length(unique(Fatty))*1.5), height = 3.5, dpi = 600,bg="transparent")
 
 #### Do Stacked VlnPlot of 5 Marker per Cluster
 DefaultAssay(NPC_ALL_TRANSFORMED) <-"RNA"
 for (c in unique(NPC_ALL_TRANSFORMED$mouseRNA.main)){
   mm <- ConservedMarkers5%>%filter(cluster == c)
-  p<-VlnPlot(NPC_ALL_TRANSFORMED, features = mm$genes, assay= "RNA", layer= "scale.data",log = T, stack = T,flip = F, fill.by = "ident")+
+  p<-VlnPlot(NPC_ALL_TRANSFORMED, features = mm$genes, assay= "RNA", layer= "data",log = T, stack = T,flip = F, fill.by = "ident")+
   theme_classic()+NoLegend()+theme(axis.title = element_blank())+
   labs(y="Cell Type")
 print(p)
 ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_VlnPlot",c,"_woMALAT_Filter.png"), p,width = 8, height = 4, dpi = 800,bg="transparent")
 }
-
-#### Try to get Markers from Panglao DB to have independent cluster markers to prove my clusters
-#Code from internet to get human genes to mouse gene conversion
-mouse_human_genes <- read.csv("http://www.informatics.jax.org/downloads/reports/HOM_MouseHumanSequence.rpt",sep="\t")
-# separate human and mouse 
-mouse <- split.data.frame(mouse_human_genes,mouse_human_genes$Common.Organism.Name)[[2]]
-human <- split.data.frame(mouse_human_genes,mouse_human_genes$Common.Organism.Name)[[1]]
-# remove some columns
-mouse <- mouse[,c(1,4)]
-human <- human[,c(1,4)]
-# merge the 2 datasets  (note that the human list is longer than the mouse one)
-mh_data <- merge.data.frame(mouse,human,by = "DB.Class.Key",all.y = TRUE) 
-mh_data<-mh_data%>%arrange(desc(Symbol.y))
-head(mh_data)
-#Load Panglao Markers
-PanglaoMarkers <- read.table("./99_other/PanglaoDB_markers_27_Mar_2020.tsv",h=T,sep="\t",quote="")
-#Shrink Dataset to contain right species, necessary cell types and organs and some selection in sensitivity/canonical marker
-PanglaoMarkers <-PanglaoMarkers%>%
-  filter(species == "Mm" | species == "Mm Hs" & sensitivity_mouse > 0.01,
-         cell.type !="Adipocytes",
-         cell.type !="Chondrocytes",
-         cell.type !="Plateletes",
-        !is.na(sensitivity_mouse ),
-        !is.na(specificity_mouse),
-        !is.na(canonical.marker),
-        canonical.marker==1,
-        organ == "Liver" |organ == "Immune system" | 
-        organ == "Blood" |organ == "Connective tissue" | 
-        organ=="Epithelium"|organ == "Vasculature" |organ == "Other")
-#Get the human genes names from Panglao transformed to mouseGene names
-PanglaoMarkers[,"mouseGene"] <- NA
-for (g in mh_data$Symbol.y){
-  if (g %in% PanglaoMarkers$official.gene.symbol){
-    pos_in_Pang<-grep(g,PanglaoMarkers$official.gene.symbol)
-    pos_in_mh <-match(g,mh_data$Symbol.y)
-    for(p in pos_in_Pang){
-      PanglaoMarkers$mouseGene[pos_in_Pang]<-(mh_data$Symbol.x [pos_in_mh])
-    }
-    }
-  }
-#reorder columns
-PanglaoMarkers%>%select(cell.type,mouseGene,official.gene.symbol,
-                        species,organ,sensitivity_mouse,specificity_mouse,
-                        ubiquitousness.index,nicknames,product.description,
-                        gene.type,germ.layer) 
-#check if there a unassigned mouseGenes
-nanana<-PanglaoMarkers%>%filter(is.na(mouseGene) )
-#### need to find mouse gene names for the nananana s ###
-write.csv(nanana,paste0("./99_other/2_Clustering/PanglaoDBMarkes_woMouseName.csv"))
-#### added mouse gene names by hand #####
-# convert the NA mousegenes with the hand filled datatable to mouseGene names
-Panglao_noNA <-read.csv("99_other/2_Clustering/PanglaoDBMarkers_manually_assigned.csv", sep = ";")
-for (g in Panglao_noNA$official.gene.symbol){
-  if (g %in% PanglaoMarkers$official.gene.symbol){
-    pos_in_Pang<-grep(g,PanglaoMarkers$official.gene.symbol)
-    pos_in_noNA <-match(g,Panglao_noNA$official.gene.symbol)
-    for(p in pos_in_Pang){
-      PanglaoMarkers$mouseGene[pos_in_Pang]<-(mh_data$Symbol.x [pos_in_noNA])
-    }
-  }
-}
-#Are there NAs left?
-nonono<-PanglaoMarkers%>%filter(is.na(mouseGene) )
-#Sort genes in Panglao bei sensitivity in mouse
-PanglaoMarkers <-PanglaoMarkers%>%
-  group_by(cell.type)%>%
-  arrange((desc(sensitivity_mouse)),.by_group = T)
-
-#PanglaoMarkers<-PanglaoMarkers%>%
-#  mutate(mouseGene = ifelse(mouseGene %in% NPC_ALL_TRANSFORMED@assays$RNA@meta.data$var.features, mh_data$Symbol.x, NA))%>%
-#  filter(!is.na(mouseGene))
-for(c in unique(PanglaoMarkers$cell.type)){
-  CP<-subset(PanglaoMarkers,PanglaoMarkers$cell.type==c)
-  p<-DoHeatmap(NPC_ALL_TRANSFORMED, assay = "RNA",slot = "scale.data", features = c(unique(CP$mouseGene)),
-               draw.lines = T,lines.width = NULL,
-               label = F, group.bar =T)+
-    scale_fill_viridis_c()+
-    theme(axis.text.y.left = element_text(size = 4),
-          legend.justification = "top", 
-          legend.title = element_text(size=6),
-          legend.key.height= unit(0.2, 'cm'), 
-          legend.key.width= unit(0.1, 'cm'),
-          legend.text = element_text(size=4))
-  print(p)
-  ggsave(filename = paste0("./03_plots/2_Clustering/ClustermarkerPanglao",c,"_woMALAT_Filter.png"),
-         p,
-         width = 3.25, 
-         height = 3.25,
-         dpi = 1200, 
-         bg="transparent")
-  }
-##### Panglao Markers kinda specific but also not. need to have good metrics to select genes to represent "Canonical Cluster Markers"#
-#### I looked at PanglaoMarkers and on top of this script I defined manually marker genes per cluster. 
-#Here I want to get the product descriptions for these defined markers
-CanoMarkers_Table<-PanglaoMarkers%>%ungroup()%>%filter(mouseGene %in% Canonical_ClusterMarker)%>%
-  select(mouseGene, official.gene.symbol, product.description,cell.type)%>%
-  arrange(factor(mouseGene,levels=Canonical_ClusterMarker))%>%
-filter(official.gene.symbol!="CD44" & official.gene.symbol!="CD40" & official.gene.symbol!="CD47" & official.gene.symbol!="CD48")%>%
-select(mouseGene,product.description,official.gene.symbol)%>%mutate(Reference= "1")%>%
-  rename( humanGene =official.gene.symbol,Protein = product.description)
-CanoMM<-list(Leukocytes=Leukocyte_Marker,
-             `T Cells`=T_Marker,
-             `NK Cells`=NK_Marker,
-             `B Cells`=B_Marker,
-             `myeloid Cells`=myeloid_Marker,
-             Macropahges=Macro_Marker,
-             `Kupffer Cells`=KC_Marker,
-             Monocytes=Mono_Marker,
-             Neutrophils=Neutro_Marker,
-             Fibroblasts=Fibro_Marker,
-             `Hepatic Stellate Cells`= HSC_Marker,
-             `Endothelial Cells`=Endo_Marker,
-             Hepatocytes= Hep_Marker)
-MarkerFrame <-data.frame()
-
-for (e in 1:length(CanoMM)){
-  print(e)
-  print(CanoMM[[e]])
-print(names(CanoMM[e])[1])
-x<-data.frame(mouseGene=CanoMM[[e]], Marker.for =names(CanoMM[e])[1])
-MarkerFrame <-rbind(MarkerFrame,x)
-}
-CanoMarkers_Table<-merge(MarkerFrame,CanoMarkers_Table, by = "mouseGene", all.x =T)%>%arrange(factor(mouseGene,levels=Canonical_ClusterMarker))%>%distinct(mouseGene,.keep_all = T)
-#### Generate nice table as output for canonical Markers
-CanoMarkers_Table%>%rename(`Murine Gene`=mouseGene,`Human Gene`=humanGene,`Marker for`=Marker.for)%>%
-  gt()%>%
-  tab_header(title = "Canonical Cluster Markers")%>%
-  tab_style(style = cell_text(color = "black", weight = "bold", align = "center"),locations = cells_title("title"))%>%
-  tab_style(style= cell_text(weight= "bold"),locations = cells_column_labels(everything()))%>%
-   opt_table_lines()%>%
-  tab_options(table.font.size="small")%>%
-  gtsave("Canonical_Markers_Table.docx",path="./03_plots/2_Clustering/")
 
 
 
@@ -663,7 +666,7 @@ for (GL in Gene_List){
     print(p)
     print(paste0("I did FeaturePlot of ",g,". Now I will do VlnPlot of ",g,"."))
     dev.off()
-    p<-VlnPlot(NPC_ALL_TRANSFORMED, features = g, split.by = "stim",group.by = "mouseRNA.main", pt.size = 0, combine = FALSE)
+    p<-VlnPlot(NPC_ALL_TRANSFORMED, features = g, split.by = "stim",group.by = "mouseRNA.main", pt.size = 0, combine = FALSE, assay= "RNA", layer= "data" )
     png(paste0("./03_plots/2_Clustering/VlnPlot_",g,"_woMALAT_Filter.png"))
     print(p)
     dev.off()
