@@ -51,7 +51,10 @@ library(mmtable2)
 library(gt)
 source("02_r_scripts/Function_Malat1.R")
 source("02_r_scripts/Function_VlnPlot.R") 
+rm(list = ls(all.names = TRUE)) # will clear all objects including hidden objects
+gc() # free up memory and report the memory usage
 set.seed(42)
+
 #### Load Input Data ####
 ### Results from FK44.1_COUNT_2_0_TRANSFORM and CLUSTERING
 ### SoupX, QC, SCT, Integration, Clustering, Annotation, Removal of Clusters with low cell numbers
@@ -109,20 +112,21 @@ Canonical_ClusterMarker <-unique(c(Leukocyte_Marker, T_Marker, NK_Marker, B_Mark
 Idents(NPC_ALL_TRANSFORMED) <- "mouseRNA.main"
 Idents(NPC_ALL_TRANSFORMED) <-factor(Idents(NPC_ALL_TRANSFORMED),levels=myClusterSorting)
 z<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
-# 
-# p<-DoHeatmap(NPC_ALL_TRANSFORMED, assay = "RNA",slot = "scale.data", features = Orseth_2022_ResponsetoTumor,
-#              draw.lines = T,lines.width = NULL,
-#              label = F, group.bar =T)+
-#   scale_fill_viridis_c()+
-#   theme(axis.text.y.left = element_text(size = 2.8),
-#         legend.justification = "top", 
-#         legend.title = element_text(size=6),
-#         legend.key.height= unit(0.2, 'cm'), 
-#         legend.key.width= unit(0.1, 'cm'),
-#         legend.text = element_text(size=4))
-# print(p)
-# ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_Canonnical_HeatMap_woMALAT_Filter.png"), p,width = 3.25, height = 3.25,dpi = 1200, bg="transparent")
-# 
+
+p<-DoHeatmap(NPC_ALL_TRANSFORMED, assay = "RNA",slot = "scale.data", features = Canonical_ClusterMarker,
+             draw.lines = T,lines.width = NULL,
+             label = F, group.bar =T)+
+  scale_fill_viridis_c()+
+  theme(axis.text.y.left = element_text(size = 2.8),
+        legend.justification = "top",
+        legend.title = element_text(size=6),
+        legend.key.height= unit(0.2, 'cm'),
+        legend.key.width= unit(0.1, 'cm'),
+        legend.text = element_text(size=4))
+print(p)
+ggsave(filename = paste0("./03_plots/2_Clustering/Clustermarker_Canonical_HeatMap_woMALAT_Filter.png"),
+       p,width = 3.25, height = 3.25,dpi = 1200, bg="transparent")
+
 # 
 # Idents(NPC_ALL_TRANSFORMED) <- "seurat_clusters"
 # Idents(NPC_ALL_TRANSFORMED) <- "celltype.stim"
