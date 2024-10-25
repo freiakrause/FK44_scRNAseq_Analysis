@@ -34,6 +34,8 @@
 #remotes::install_github("ianmoran11/mmtable2")
 
 ################################# Load Libraries #########################################################
+rm(list = ls(all.names = TRUE)) # will clear all objects including hidden objects
+gc() # free up memory and report the memory usage
 library(Seurat)
 library(ggplot2)
 library(SingleR)
@@ -49,21 +51,18 @@ library(EnhancedVolcano)
 library(readr)
 library(mmtable2)
 library(gt)
-source("02_r_scripts/Function_Malat1.R")
-source("02_r_scripts/Function_VlnPlot.R") 
-rm(list = ls(all.names = TRUE)) # will clear all objects including hidden objects
-gc() # free up memory and report the memory usage
+
 set.seed(42)
 
 #### Load Input Data ####
 ### Results from FK44.1_COUNT_2_0_TRANSFORM and CLUSTERING
 ### SoupX, QC, SCT, Integration, Clustering, Annotation, Removal of Clusters with low cell numbers
-#NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds")
-# NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter.rds")
-# y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
-# DefaultAssay(NPC_ALL_TRANSFORMED) <-"SCT"
-# NPC_ALL_TRANSFORMED <- PrepSCTFindMarkers(NPC_ALL_TRANSFORMED)
-# saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter_PrepSCT.rds")
+
+NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter.rds")
+y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
+DefaultAssay(NPC_ALL_TRANSFORMED) <-"SCT"
+NPC_ALL_TRANSFORMED <- PrepSCTFindMarkers(NPC_ALL_TRANSFORMED)
+saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter_PrepSCT.rds")
 NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter_PrepSCT.rds")
 y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
 
@@ -384,20 +383,20 @@ ConservedMarkers20<-data.frame()
 
 b<-unique(NPC_ALL_TRANSFORMED@meta.data$mouseRNA.main)
 #### Calculate Markers and save them ####
-# for (c in b){
-#   markers <- FindConservedMarkers(NPC_ALL_TRANSFORMED, assay = "RNA", ident.1 = c, grouping.var = "sample",verbose = T)
-#   write.csv(markers,paste0("./99_other/2_Clustering/ConservedMarkers_",c,"_woMALAT_Filter.csv"))
-#   markers5<-data.frame(cluster=c,genes=rownames(markers)[1:5])
-#   ConservedMarkers5<-rbind(ConservedMarkers5,markers5)
-#   markers10<-data.frame(cluster=c,genes=rownames(markers)[1:10])
-#   ConservedMarkers10<-rbind(ConservedMarkers10,markers10)
-#   markers20<-data.frame(cluster=c,genes=rownames(markers)[1:20])
-#   ConservedMarkers20<-rbind(ConservedMarkers20,markers20)
-#   print(paste0("I saved conserved Markers for ",c,"."))
-# }
-# write.csv(ConservedMarkers5,paste0("./99_other/2_Clustering/ConservedMarkers_Top5_woMALAT_Filter.csv"))
-# write.csv(ConservedMarkers10,paste0("./99_other/2_Clustering/ConservedMarkers_Top10_woMALAT_Filter.csv"))
-# write.csv(ConservedMarkers20,paste0("./99_other/2_Clustering/ConservedMarkers_Top20_woMALAT_Filter.csv"))
+for (c in b){
+  markers <- FindConservedMarkers(NPC_ALL_TRANSFORMED, assay = "RNA", ident.1 = c, grouping.var = "sample",verbose = T)
+  write.csv(markers,paste0("./99_other/2_Clustering/ConservedMarkers_",c,"_woMALAT_Filter.csv"))
+  markers5<-data.frame(cluster=c,genes=rownames(markers)[1:5])
+  ConservedMarkers5<-rbind(ConservedMarkers5,markers5)
+  markers10<-data.frame(cluster=c,genes=rownames(markers)[1:10])
+  ConservedMarkers10<-rbind(ConservedMarkers10,markers10)
+  markers20<-data.frame(cluster=c,genes=rownames(markers)[1:20])
+  ConservedMarkers20<-rbind(ConservedMarkers20,markers20)
+  print(paste0("I saved conserved Markers for ",c,"."))
+}
+write.csv(ConservedMarkers5,paste0("./99_other/2_Clustering/ConservedMarkers_Top5_woMALAT_Filter.csv"))
+write.csv(ConservedMarkers10,paste0("./99_other/2_Clustering/ConservedMarkers_Top10_woMALAT_Filter.csv"))
+write.csv(ConservedMarkers20,paste0("./99_other/2_Clustering/ConservedMarkers_Top20_woMALAT_Filter.csv"))
 
 #### Load calculated and saved Markers####
 ConservedMarkers5<- read.csv(paste0("./99_other/2_Clustering/ConservedMarkers_Top5_woMALAT_Filter.csv"))

@@ -33,6 +33,8 @@
 #remotes::install_github('immunogenomics/presto')
 
 ################################# Load Libraries #########################################################
+rm(list = ls(all.names = TRUE)) # will clear all objects including hidden objects
+gc() # free up memory and report the memory usage
 library(Seurat)
 library(ggplot2)
 library(SingleR)
@@ -49,8 +51,7 @@ require(scales)
 source("02_r_scripts/Function_Malat1.R")
 source("02_r_scripts/Function_VlnPlot.R") 
 source("02_r_scripts/Function_DoMultiBarHeatmap.R") 
-rm(list = ls(all.names = TRUE)) # will clear all objects including hidden objects
-gc() # free up memory and report the memory usage
+
 set.seed(42)
 #### Load Input Data ####
 ### Results from FK44.1_COUNT_2_0
@@ -60,41 +61,43 @@ NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_
 ########################## Identify differentially expressed Genes in Clusters across Conditions Enhanced Volcano ############################
 #Add "celltype.stim" to meta data and PrepSCT FIndMarkers----
 Idents(NPC_ALL_TRANSFORMED) <- "celltype.stim"
-#NPC_ALL_TRANSFORMED <- PrepSCTFindMarkers(NPC_ALL_TRANSFORMED)
 a<-unique(NPC_ALL_TRANSFORMED@meta.data$mouseRNA.main)
 y<-NPC_ALL_TRANSFORMED@meta.data%>%group_by(mouseRNA.main,stim)%>%summarise(n=n())
- # for (c in a){
- #   single_l.de <-FindMarkers(NPC_ALL_TRANSFORMED, assay = NULL, ident.2 = paste0(c,"_EtOH"), ident.1 = paste0(c,"_TAM"),
- #                             verbose = T, recorrect_umi = FALSE, min.cells.feature = 3, min.pct= 0.2,
- #                             test.use="wilcox_limma")
- #   write.csv(single_l.de,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single_limma",c,".csv"))
- # }
- # for (c in a){
- #   single_M.de <-FindMarkers(NPC_ALL_TRANSFORMED, assay = NULL, ident.2 = paste0(c,"_EtOH"), ident.1 = paste0(c,"_TAM"),
- #                             verbose = T,recorrect_umi = FALSE, min.cells.feature = 3, min.pct= 0.2,
- #                             test.use="MAST")
- #   write.csv(single_M.de,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single_MAST",c,".csv"))
- # }
+  for (c in a){
+    single_l.de <-FindMarkers(NPC_ALL_TRANSFORMED, assay = NULL, ident.2 = paste0(c,"_EtOH"), ident.1 = paste0(c,"_TAM"),
+                              verbose = T, recorrect_umi = FALSE, min.cells.feature = 3, min.pct= 0.2,
+                              test.use="wilcox_limma")
+    write.csv(single_l.de,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single_limma",c,".csv"))
+  }
+  for (c in a){
+    single_M.de <-FindMarkers(NPC_ALL_TRANSFORMED, assay = NULL, ident.2 = paste0(c,"_EtOH"), ident.1 = paste0(c,"_TAM"),
+                              verbose = T,recorrect_umi = FALSE, min.cells.feature = 3, min.pct= 0.2,
+                              test.use="MAST",
+                              latent.vars = "sex")
+    write.csv(single_M.de,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single_MAST",c,".csv"))
+  }
 
+for (c in a){
+  single_M.de <-read.csv(paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single_MAST",c,".csv"))
+  single_l.de <-read.csv(paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_single_limma",c,".csv"))
+  names(single_l.de) <- paste0(names(single_l.de), "_l.sc")
+  single_l.de$gene <- rownames(single_l.de)
+  names(single_M.de) <- paste0(names(single_M.de), "_M.sc")
+  single_M.de$gene <- rownames(single_M.de)
+  merge_dat <- merge(single_M.de, single_l.de,by = "gene")
+  merge_dat <- merge_dat[order(merge_dat$p_val_M.sc), ]
+  #Number of genes that are marginally significant in both; marginally significant only in bulk; and marginally significant only in single-cell
+  common <- merge_dat$gene[which(merge_dat$p_val_l.sc < 0.05&
+                                   merge_dat$p_val_M.sc < 0.05)]
+ write.csv(common,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_Common",c,".csv"))
+  only_sc_l <- merge_dat$gene[which(merge_dat$p_val_M.sc > 0.05 &
+                                      merge_dat$p_val_l.sc < 0.05)]
+  write.csv(only_sc_l,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_Only_Limma",c,".csv"))
 
- # names(single_l.de) <- paste0(names(single_l.de), "_l.sc")
- # single_l.de$gene <- rownames(single_l.de)
- # names(single_M.de) <- paste0(names(single_M.de), "_M.sc")
- # single_M.de$gene <- rownames(single_M.de)
- # merge_dat <- merge(single_M.de, single_l.de,by = "gene")
- # merge_dat <- merge_dat[order(merge_dat$p_val_M.sc), ]
- # #Number of genes that are marginally significant in both; marginally significant only in bulk; and marginally significant only in single-cell
- # common <- merge_dat$gene[which(merge_dat$p_val_l.sc < 0.05&
- #                                  merge_dat$p_val_M.sc < 0.05)]
- # write.csv(common,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_Common",c,".csv"))
- # only_sc_l <- merge_dat$gene[which(merge_dat$p_val_M.sc > 0.05 &
- #                                     merge_dat$p_val_l.sc < 0.05)]
- # write.csv(only_sc_l,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_Only_Limma",c,".csv"))
- # 
- # only_sc_M <- merge_dat$gene[which(  merge_dat$p_val_l.sc > 0.05 &
- #                                       merge_dat$p_val_M.sc < 0.05)]
- # write.csv(only_sc_M,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_Only_MAST",c,".csv"))
-
+  only_sc_M <- merge_dat$gene[which(  merge_dat$p_val_l.sc > 0.05 &
+                                        merge_dat$p_val_M.sc < 0.05)]
+ write.csv(only_sc_M,paste0("./99_other/3_DEG_Analysis_MainCluster/1_DEG_Analysis_Only_MAST",c,".csv"))
+}
 myClusterSorting2 <-c("T cells_EtOH","T cells_TAM","NK cells_EtOH","NK cells_TAM","B cells_EtOH","B cells_TAM","Macrophages_EtOH","Macrophages_TAM",
                       "Monocytes_EtOH","Monocytes_TAM","Granulocytes_EtOH","Granulocytes_TAM","Fibroblasts_EtOH","Fibroblasts_TAM","Endothelial cells_EtOH","Endothelial cells_TAM","Hepatocytes_EtOH","Hepatocytes_TAM")
 Idents(NPC_ALL_TRANSFORMED) <- "celltype.stim"

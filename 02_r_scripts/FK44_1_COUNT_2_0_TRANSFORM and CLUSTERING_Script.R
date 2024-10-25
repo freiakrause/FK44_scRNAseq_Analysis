@@ -23,7 +23,7 @@
 #renv::install("MAST")
 #renv::install("paletteer")
 #renv::install("ggsci")
-
+#renv::install("harmony")
 #BiocManager::install(version = "3.18")
 #BiocManager::install("SingleR")
 #BiocManager::install("celldex")
@@ -36,24 +36,20 @@
 #remotes::install_github('immunogenomics/presto')
 
 ################################# Load Libraries #########################################################
+rm(list = ls(all.names = TRUE)) # will clear all objects including hidden objects
+gc() # free up memory and report the memory usage
+
 library(Seurat)
 library(ggplot2)
+source("02_r_scripts/Function_Malat1.R")
 library(SingleR)
 library(dplyr)
 library(celldex)
 library(RColorBrewer)
 library(SingleCellExperiment)
-library(scrubletR)
-library(gprofiler2)
-library(patchwork)
-library(EnhancedVolcano)
-library(viridis)
+library(gt)
 library(paletteer)
 library(ggsci)
-library(mmtable2)
-library(gt)
-source("02_r_scripts/malat1_function.R")
-source("02_r_scripts/VlnPlot_Function.R")
 set.seed(42)
 
 ############################################# Load Input Data ###############################################
@@ -73,114 +69,122 @@ animals<-c("87","88","91","92")
 #then clusters would not be split by sample. But after sctransform yes
 #Online i found that some people to normalization etc per sample and then integration after that might resolve per animal differences
 #https://satijalab.org/seurat/archive/v4.3/sctransform_v2_vignette
-# for(a in animals){
-#   print(a)
-#   NPC <-readRDS(paste0("./01_tidy_data/1_QC_1_QC6_NPC_",a,".rds"))
-#   all.genes <- rownames(NPC)
-#   #generated clusters to check cellcycle scoring
-#   #in older scrit I did this and then plotted results here i only do it and dont plot results
-#   NPC <- ScaleData(NPC, features = all.genes, verbose = F)
-#   NPC <- RunPCA(NPC, features = VariableFeatures(object = NPC), npcs = 20, verbose = F)
-#   NPC <- RunUMAP(NPC, dims = 1:20, verbose = F, reduction = "pca")
-#   NPC <- FindNeighbors(NPC, dims = 1:20, k.param = 10, verbose = F)
-#   NPC <- FindClusters(NPC, resolution = 0.1, verbose = F)
-#   NPC <-CellCycleScoring(NPC, s.features = mmus_s, g2m.features = mmus_g2m)
-# #### Vizualize PCA results ----
-#   png(paste0("./03_plots/1_QC/QC_2_PCADIMENSIONS_PCA1_iAL",a,".png"))
-#   p<-VizDimLoadings(NPC, dims = 1:9, reduction = "pca") &  theme(axis.text=element_text(size=5), axis.title=element_text(size=8,face="bold"))
-#   print(p)
-#   dev.off()
-#   png(paste0("./03_plots/1_QC/QC_2_PCADIMENSIONS_HEAT_iAL",a,".png"))
-#   p<-DimHeatmap(NPC, dims = 1:6, nfeatures = 20, cells = 500, balanced = T)
-#   print(p)
-#   dev.off()
-#   png(paste0("./03_plots/1_QC/QC_2_PCADIMENSIONS_PCA2_iAL",a,".png"))
-#   p<-DimPlot(NPC, reduction = "pca")
-#   print(p)
-#   dev.off()
-#   png(paste0("./03_plots/1_QC/QC_2_PCADIMENSIONS_ELBOW_iAL",a,".png"))
-#   p<-ElbowPlot(NPC) #It’s often good to find how many PCs can be used without much information loss. Look were the big drop happens
-#   print(p)
-#   dev.off()
-#   png(paste0("./03_plots/1_QC/QC_2_REGRESSION_CLUSTER for REGRESSION Test_iAL",a,".png"))
-#   p<-DimPlot(NPC,label.size = 4,repel = T,label = T)
-#   print(p)
-#   dev.off()
-#   png(paste0("./03_plots/1_QC/QC_2_REGRESSION_CLUSTER for REGRESSION MT_iAL",a,".png"))
-#   p<-FeaturePlot(NPC,features = "percent.mt",label.size = 4,repel = T,label = T) &   theme(plot.title = element_text(size=10))
-#   print(p)
-#   dev.off()
-#   png(paste0("./03_plots/1_QC/QC_2_REGRESSION_VIOLIN_MT_iAL",a,".png"))
-#   p<-VlnPlot(NPC,features = "percent.mt") & theme(plot.title = element_text(size=10))
-#   print(p)
-#   dev.off()
-#   png(paste0("./03_plots/1_QC/QC_2_REGRESSION_CLUSTER for REGRESSION RB_iAL",a,".png"))
-#   p<-FeaturePlot(NPC,features = "percent.rb",label.size = 4,repel = T,label = T) &   theme(plot.title = element_text(size=10))
-#   print(p)
-#   dev.off()
-#   png(paste0("./03_plots/1_QC/QC_2_REGRESSION_VIOLIN_GENES_iAL",a,".png"))
-#   p<-VlnPlot(NPC,features = c("nFeature_RNA")) & theme(plot.title = element_text(size=10))
-#   print(p)
-#   dev.off()
-#   png(paste0("./03_plots/1_QC/QC_2_REGRESSION_VIOLIN_UMIs_iAL",a,".png"))
-#   p<-VlnPlot(NPC,features = c("nCount_RNA")) & theme(plot.title = element_text(size=10))
-#   print(p)
-#   dev.off()
-#   png(paste0("./03_plots/1_QC/QC_2_REGRESSION_CLUSTER for REGRESSION CELLCYCLESCORE_SG2M_iAL",a,".png"))
-#   p<-FeaturePlot(NPC,features = c("S.Score","G2M.Score"),label.size = 4,repel = T,label = T) &   theme(plot.title = element_text(size=10))
-#   print(p)
-#   dev.off()
-#   png(paste0("./03_plots/1_QC/QC_2_REGRESSION_VIOLIN_CELLCYCLESCORE_iAL",a,".png"))
-#   p<-VlnPlot(NPC,features = c("S.Score","G2M.Score")) &   theme(plot.title = element_text(size=10))
-#   print(p)
-#   dev.off()
-#   png(paste0("./03_plots/1_QC/QC_2_REGRESSION_VIOLIN_CELLCYCLESCORE_S_iAL",a,".png"))
-#   p<-VlnPlot(NPC,features = "S.Score") &   theme(plot.title = element_text(size=10))
-#   print(p)
-#   dev.off()
-#   png(paste0("./03_plots/1_QC/QC_2_REGRESSION_VIOLIN_CELLCYCLESCORE_G2M_iAL",a,".png"))
-#   p<-VlnPlot(NPC,features = "G2M.Score") &   theme(plot.title = element_text(size=10))
-#   print(p)
-#   dev.off()
-#   png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_iAL",a,".png"))
-#   p <-RidgePlot(NPC, features = "Malat1")
-#   print(p)
-#   dev.off()
-#   norm_counts <- NPC@assays$RNA$data["Malat1",]
-#   threshold <- define_malat1_threshold(norm_counts)
-#   malat1_threshold <- norm_counts > threshold
-#   NPC$malat1_threshold <- malat1_threshold
-#   NPC$malat1_threshold <- factor(NPC$malat1_threshold, levels = c("TRUE","FALSE"))
-#   png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter2_iAL",a,".png"))
-#   p <-DimPlot(NPC, group.by = "malat1_threshold")
-#   print(p)
-#   dev.off()
-#   saveRDS(NPC, file = paste0("./01_tidy_data/2_1_2_NPC_",a,"_afterCellCycleScoring.rds"))
-#   print(paste0(" I saved the RDS with CellCycleScoring for NPC_",a,"."))
-#   NPC_list<-append(NPC_list,NPC)
-# }
-# rm(mmus_g2m, mmus_s)
+for(a in animals){
+  print(a)
+  NPC <-readRDS(paste0("./01_tidy_data/1_QC_1_QC6_NPC_",a,".rds"))
+  all.genes <- rownames(NPC)
+  #generated clusters to check cellcycle scoring
+  #in older scrit I did this and then plotted results here i only do it and dont plot results
+  NPC <- ScaleData(NPC, features = all.genes, verbose = F)
+  NPC <- RunPCA(NPC, features = VariableFeatures(object = NPC), npcs = 20, verbose = F)
+  NPC <- RunUMAP(NPC, dims = 1:20, verbose = F, reduction = "pca")
+  NPC <- FindNeighbors(NPC, dims = 1:20, k.param = 10, verbose = F)
+  NPC <- FindClusters(NPC, resolution = 0.1, verbose = F)
+  NPC <-CellCycleScoring(NPC, s.features = mmus_s, g2m.features = mmus_g2m)
+#### Vizualize PCA results ----
+  png(paste0("./03_plots/1_QC/QC_2_PCADIMENSIONS_PCA1_iAL",a,".png"))
+  p<-VizDimLoadings(NPC, dims = 1:9, reduction = "pca") &  theme(axis.text=element_text(size=5), axis.title=element_text(size=8,face="bold"))
+  print(p)
+  dev.off()
+  png(paste0("./03_plots/1_QC/QC_2_PCADIMENSIONS_HEAT_iAL",a,".png"))
+  p<-DimHeatmap(NPC, dims = 1:6, nfeatures = 20, cells = 500, balanced = T)
+  print(p)
+  dev.off()
+  png(paste0("./03_plots/1_QC/QC_2_PCADIMENSIONS_PCA2_iAL",a,".png"))
+  p<-DimPlot(NPC, reduction = "pca")
+  print(p)
+  dev.off()
+  png(paste0("./03_plots/1_QC/QC_2_PCADIMENSIONS_ELBOW_iAL",a,".png"))
+  p<-ElbowPlot(NPC) #It’s often good to find how many PCs can be used without much information loss. Look were the big drop happens
+  print(p)
+  dev.off()
+  png(paste0("./03_plots/1_QC/QC_2_REGRESSION_CLUSTER for REGRESSION Test_iAL",a,".png"))
+  p<-DimPlot(NPC,label.size = 4,repel = T,label = T)
+  print(p)
+  dev.off()
+  png(paste0("./03_plots/1_QC/QC_2_REGRESSION_CLUSTER for REGRESSION MT_iAL",a,".png"))
+  p<-FeaturePlot(NPC,features = "percent.mt",label.size = 4,repel = T,label = T) &   theme(plot.title = element_text(size=10))
+  print(p)
+  dev.off()
+  png(paste0("./03_plots/1_QC/QC_2_REGRESSION_VIOLIN_MT_iAL",a,".png"))
+  p<-VlnPlot(NPC,features = "percent.mt") & theme(plot.title = element_text(size=10))
+  print(p)
+  dev.off()
+  png(paste0("./03_plots/1_QC/QC_2_REGRESSION_CLUSTER for REGRESSION RB_iAL",a,".png"))
+  p<-FeaturePlot(NPC,features = "percent.rb",label.size = 4,repel = T,label = T) &   theme(plot.title = element_text(size=10))
+  print(p)
+  dev.off()
+  png(paste0("./03_plots/1_QC/QC_2_REGRESSION_VIOLIN_GENES_iAL",a,".png"))
+  p<-VlnPlot(NPC,features = c("nFeature_RNA")) & theme(plot.title = element_text(size=10))
+  print(p)
+  dev.off()
+  png(paste0("./03_plots/1_QC/QC_2_REGRESSION_VIOLIN_UMIs_iAL",a,".png"))
+  p<-VlnPlot(NPC,features = c("nCount_RNA")) & theme(plot.title = element_text(size=10))
+  print(p)
+  dev.off()
+  png(paste0("./03_plots/1_QC/QC_2_REGRESSION_CLUSTER for REGRESSION CELLCYCLESCORE_SG2M_iAL",a,".png"))
+  p<-FeaturePlot(NPC,features = c("S.Score","G2M.Score"),label.size = 4,repel = T,label = T) &   theme(plot.title = element_text(size=10))
+  print(p)
+  dev.off()
+  png(paste0("./03_plots/1_QC/QC_2_REGRESSION_VIOLIN_CELLCYCLESCORE_iAL",a,".png"))
+  p<-VlnPlot(NPC,features = c("S.Score","G2M.Score")) &   theme(plot.title = element_text(size=10))
+  print(p)
+  dev.off()
+  png(paste0("./03_plots/1_QC/QC_2_REGRESSION_VIOLIN_CELLCYCLESCORE_S_iAL",a,".png"))
+  p<-VlnPlot(NPC,features = "S.Score") &   theme(plot.title = element_text(size=10))
+  print(p)
+  dev.off()
+  png(paste0("./03_plots/1_QC/QC_2_REGRESSION_VIOLIN_CELLCYCLESCORE_G2M_iAL",a,".png"))
+  p<-VlnPlot(NPC,features = "G2M.Score") &   theme(plot.title = element_text(size=10))
+  print(p)
+  dev.off()
+  png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_iAL",a,".png"))
+  p <-RidgePlot(NPC, features = "Malat1")
+  print(p)
+  dev.off()
+  norm_counts <- NPC@assays$RNA$data["Malat1",]
+  threshold <- define_malat1_threshold(norm_counts)
+  malat1_threshold <- norm_counts > threshold
+  NPC$malat1_threshold <- malat1_threshold
+  NPC$malat1_threshold <- factor(NPC$malat1_threshold, levels = c("TRUE","FALSE"))
+  png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter2_iAL",a,".png"))
+  p <-DimPlot(NPC, group.by = "malat1_threshold")
+  print(p)
+  dev.off()
+  saveRDS(NPC, file = paste0("./01_tidy_data/2_1_2_NPC_",a,"_afterCellCycleScoring.rds"))
+  print(paste0(" I saved the RDS with CellCycleScoring for NPC_",a,"."))
+}
+rm(mmus_g2m, mmus_s, NPC)
 NPC_87<-readRDS("./01_tidy_data/2_1_2_NPC_87_afterCellCycleScoring.rds")
 NPC_88<-readRDS("./01_tidy_data/2_1_2_NPC_88_afterCellCycleScoring.rds")
 NPC_91<-readRDS("./01_tidy_data/2_1_2_NPC_91_afterCellCycleScoring.rds")
 NPC_92<-readRDS("./01_tidy_data/2_1_2_NPC_92_afterCellCycleScoring.rds")
-NPC_list<-list(NPC_87,NPC_88,NPC_91,NPC_92)
-####Due to change in Seurat integration I had to adjust code here (integrate anchors changed to Integrate Layers. 
+
+####Due to change in Seurat integration I had to adjust code here (integrate anchors changed to Integrate Layers ~16.10.24. 
 #Should be easier to use in the future but for me right now chaos)
-
-NPC<-merge(NPC_87,y=c(NPC_88,NPC_91,NPC_92), add.cell.ids=c("1","2","3","4"))
-NPC<-SCTransform(NPC,  vst.flavor= "v2",method = "glmGamPoi",  verbose = F, vars.to.regress = c("percent.mt","S.Score","G2M.Score"))
-NPC <- RunPCA(NPC,npcs=30, verbose = F)
+NPC <-merge(NPC_87,y=c(NPC_88,NPC_91,NPC_92), add.cell.ids=c("1","2","3","4"))
+NPC <-SCTransform(NPC,  vst.flavor= "v2",method = "glmGamPoi",  verbose = F, vars.to.regress = c("percent.mt","S.Score","G2M.Score"))
+NPC <-RunPCA(NPC, npcs=30, verbose = F)
 options(future.globals.maxSize = 3e+10)
-NPC_ALL_TRANSFORMED <- IntegrateLayers(object= NPC, method = RPCAIntegration, 
+NPC_ALL_TRANSFORMED <-IntegrateLayers(object= NPC, method = HarmonyIntegration, 
                                       verbose = FALSE, normalization.method = "SCT",
-                                      orig.reduction = "pca", new.reduction = 'integrated.rpca')
+                                      orig.reduction = "pca", new.reduction = 'integrated.harmony')
 
-NPC_ALL_TRANSFORMED <- FindNeighbors(NPC_ALL_TRANSFORMED, dims = 1:30, verbose = F,reduction = "integrated.rpca")
-NPC_ALL_TRANSFORMED <- FindClusters(NPC_ALL_TRANSFORMED, verbose = F,resolution = 0.2, save.SNN = TRUE)
-NPC_ALL_TRANSFORMED <- RunUMAP(NPC_ALL_TRANSFORMED, dims = 1:30, verbose = F,reduction = "integrated.rpca")
+NPC_ALL_TRANSFORMED <- FindNeighbors(NPC_ALL_TRANSFORMED, dims = 1:30, verbose = F,reduction = "integrated.harmony")
+NPC_ALL_TRANSFORMED <- FindClusters(NPC_ALL_TRANSFORMED, verbose = F,resolution = 0.2)
+NPC_ALL_TRANSFORMED <- RunUMAP(NPC_ALL_TRANSFORMED, dims = 1:30, verbose = F,reduction = "integrated.harmony")
+
+########### Don't understand what I did here and why it was necessary #####################
+###addition 10.10.24: maybe need to do this to have scaled data layer in RNA assay. In HeatMap might be nice to use for visualization
+DefaultAssay(NPC_ALL_TRANSFORMED) <- "RNA"
+NPC_ALL_TRANSFORMED <- NormalizeData(NPC_ALL_TRANSFORMED)
+NPC_ALL_TRANSFORMED <- FindVariableFeatures(NPC_ALL_TRANSFORMED, selection.method = "vst", nfeatures = 2000)
+all.genes <- rownames(NPC_ALL_TRANSFORMED)
+NPC_ALL_TRANSFORMED <- ScaleData(NPC_ALL_TRANSFORMED, features = all.genes)
+NPC_ALL_TRANSFORMED <-JoinLayers(NPC_ALL_TRANSFORMED)
+
 saveRDS(NPC_ALL_TRANSFORMED, "./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
-rm(NPC,NPC_list, NPC_87, NPC_88,NPC_91,NPC_92)
+rm(NPC, NPC_87, NPC_88, NPC_91, NPC_92)
 #rm(NPC_ALL_TRANSFORMED)
 #NPC_ALL_TRANSFORMED<-readRDS("./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
 
@@ -191,15 +195,6 @@ dev.off()
 png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_DimPLot_ALLTranformed.png"))
 DimPlot(NPC_ALL_TRANSFORMED, group.by = "malat1_threshold")
 dev.off()
-
-########### Don't understand what I did here and why it was necessary #####################
-###addition 10.10.24: maybe need to do this to have scaled data layer in RNA assay. In HeatMap might be nice to use for visualization
-DefaultAssay(NPC_ALL_TRANSFORMED) <- "RNA"
-NPC_ALL_TRANSFORMED <- NormalizeData(NPC_ALL_TRANSFORMED)
-NPC_ALL_TRANSFORMED <- FindVariableFeatures(NPC_ALL_TRANSFORMED, selection.method = "vst", nfeatures = 2000)
-all.genes <- rownames(NPC_ALL_TRANSFORMED)
-NPC_ALL_TRANSFORMED <- ScaleData(NPC_ALL_TRANSFORMED, features = all.genes)
-NPC_ALL_TRANSFORMED <-JoinLayers(NPC_ALL_TRANSFORMED)
 
 ######## Annotate Clusters using cellDex #################################
 sce <- as.SingleCellExperiment(DietSeurat(NPC_ALL_TRANSFORMED))
@@ -251,22 +246,21 @@ NPC_ALL_TRANSFORMED$celltype.stim <- paste(NPC_ALL_TRANSFORMED$mouseRNA.main, NP
 NPC_ALL_TRANSFORMED$celltype.sex <- paste(NPC_ALL_TRANSFORMED$mouseRNA.main, NPC_ALL_TRANSFORMED$sex, sep = "_")
 NPC_ALL_TRANSFORMED$sex.stim <- paste(NPC_ALL_TRANSFORMED$sex, NPC_ALL_TRANSFORMED$stim, sep = "_")
 
-#saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds")
+
 saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter.rds")
 
-#NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced.rds")
 #NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter.rds.rds")
 #### Vizuals Malat1 Filter ###
 
 Idents(NPC_ALL_TRANSFORMED)<-"mouseRNA.main"
-#png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_RidgePlot_ALLTransformed_mouseRNAMain.png"))
 png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_RidgePlot_ALLTransformed_mouseRNAMain_woMALAT_Filter.png"))
-
 RidgePlot(NPC_ALL_TRANSFORMED, features = "Malat1")
 dev.off()
+
 png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_DimPLot_ALLTranformed_mouseRNAMain_woMALAT_Filter.png"))
 DimPlot(NPC_ALL_TRANSFORMED, group.by = "malat1_threshold")
 dev.off()
+
 png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_VlnPLot_ALLTranformed_mouseRNAMain_woMALAT_Filter.png"))
 VlnPlot(NPC_ALL_TRANSFORMED,features = "Malat1")
 dev.off()
@@ -274,9 +268,11 @@ dev.off()
 png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_RidgePlot_ALLTransformed_mouseRNAMain_after_MALAT1_and_Number_woMALAT_Filter.png"))
 RidgePlot(NPC_ALL_TRANSFORMED, features = "Malat1")
 dev.off()
+
 png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_DimPLot_ALLTranformed_mouseRNAMain_MALAT1_and_Number_woMALAT_Filter.png"))
 DimPlot(NPC_ALL_TRANSFORMED, group.by = "malat1_threshold")
 dev.off()
+
 png(filename = paste0("./03_plots/1_QC/QC_Malat1-Filter_VlnPLot_ALLTranformed_mouseRNAMain_MALAT1_and_Number_woMALAT_Filter.png"))
 VlnPlot(NPC_ALL_TRANSFORMED,features = "Malat1")
 dev.off()
@@ -286,6 +282,7 @@ dev.off()
 png("./03_plots/2_Clustering/Clustering_1_ClusterNo_woLegend_woMALAT_Filter.png")
 DimPlot(NPC_ALL_TRANSFORMED, label = T, repel = T , group.by = "seurat_clusters") + ggtitle("Unsupervised clustering")+ NoLegend()
 dev.off()
+
 png("./03_plots/2_Clustering/Clustering_1_ClusterNo_wLegend_woMALAT_Filter.png")
 NPC_ALL_TRANSFORMED <- SetIdent(NPC_ALL_TRANSFORMED, value = "seurat_clusters")
 DimPlot(NPC_ALL_TRANSFORMED, label = T , repel = T, label.size = 3)+ggtitle("Unsupervised clustering")
@@ -295,6 +292,7 @@ dev.off()
 png("./03_plots/2_Clustering/Clustering_1_ClusterMouseFine_woLegend_woMALAT_Filter.png")
 DimPlot(NPC_ALL_TRANSFORMED, label = T, repel = T, group.by = "mouseRNA.fine") + ggtitle("Annotation Fine")+NoLegend()
 dev.off()
+
 png("./03_plots/2_Clustering/Clustering_1_ClusterMouseFine_wLegend_woMALAT_Filter.png")
 NPC_ALL_TRANSFORMED <- SetIdent(NPC_ALL_TRANSFORMED, value = "mouseRNA.fine")
 DimPlot(NPC_ALL_TRANSFORMED, label = F , repel = T, label.size = 3)
@@ -315,8 +313,8 @@ NPC_ALL_TRANSFORMED <- SetIdent(NPC_ALL_TRANSFORMED, value = "mouseRNA.main")
 png("./03_plots/2_Clustering/Clustering_1_ClusterMouseMain_wLegend_woMALAT_Filter.png")
 DimPlot(NPC_ALL_TRANSFORMED, label = F , repel = T,group.by = "mouseRNA.main", label.size = 3)+
   scale_color_paletteer_d("peRReo::planb")
-
 dev.off()
+
 #Vizualise Clusters with Annotation of Sex ----
 png("./03_plots/2_Clustering/Clustering_1_ClusterSex_woMALAT_Filter.png")
 DimPlot(NPC_ALL_TRANSFORMED, label = F, repel = T, group.by = "sex") + ggtitle("Sex")

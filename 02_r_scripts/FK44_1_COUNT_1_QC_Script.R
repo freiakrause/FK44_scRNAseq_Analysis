@@ -26,33 +26,26 @@
 #remotes::install_github('immunogenomics/presto')
 #remotes::install_github("cysouw/qlcMatrix")
 ############################# Load Libraries ###################################
+
+rm(list = ls(all.names = TRUE)) # will clear all objects including hidden objects
+gc() # free up memory and report the memory usage
+library(Seurat)
 library(dplyr)
-library(stringr)
 library(ggplot2)
 library(RColorBrewer)
 library(SoupX)
 library(Seurat)
-library(SingleR)
-library(celldex)
-library(SingleCellExperiment)
-library(scrubletR)
 library(gprofiler2)
-library(celda)
-library(scater)
-library(Matrix)
-library(gridExtra)
-#library(qlcMatrix)
-#library(pheatmap)
-source("02_r_scripts/malat1_function.R")
+source("02_r_scripts/Function_Malat1.R")
 set.seed(42)
 
 ###########################Load Data and Decontaminate with SoupX ##################
 #### Soup Decont ----
-Hep_genes <-c("Saa1", "Saa2","Alb","Tat")
-T_genes <-c("Cd3e","Cd3d", "Cd4", "Cd8a") 
-B_genes <-c("Cd19")
-M_genes <-c("Clec4f")
-Gene_List <-list(Hep_genes,T_genes,B_genes,M_genes)
+# Hep_genes <-c("Saa1", "Saa2","Alb","Tat")
+# T_genes <-c("Cd3e","Cd3d", "Cd4", "Cd8a") 
+# B_genes <-c("Cd19")
+# M_genes <-c("Clec4f")
+# Gene_List <-list(Hep_genes,T_genes,B_genes,M_genes)
 animals <-c("87","88","91","92")
 for (i in animals){  
   sc = load10X(paste0("./00_raw_data/biomedical-sequencing.at/projects/BSA_0873_FK44_1_LiverMet_A_1_1_51ddbfd228ec40b096e110101b219cb0/COUNT/Liver_NPC_iAL",i,"_transcriptome"))
@@ -60,9 +53,9 @@ for (i in animals){
   Soup <-sc$soupProfile[order(sc$soupProfile$est, decreasing = TRUE), ]
   write.csv(Soup,paste0("./99_other/0_Decont_SoupX/0_Decont_SoupX_Soup_Genes_iAL",i,".csv"))
   Soup_Genes <-head(rownames(Soup), n=10)
-  #  sc = autoEstCont(sc)
-  useToEst = estimateNonExpressingCells(sc, nonExpressedGeneList = list(IG = Hep_genes, T_genes,B_genes,M_genes))
-  sc = calculateContaminationFraction(sc, list(IG = Hep_genes,T_genes,B_genes,M_genes), useToEst = useToEst,forceAccept=TRUE)
+  sc = autoEstCont(sc)
+  #useToEst = estimateNonExpressingCells(sc, nonExpressedGeneList = list(IG = Hep_genes, T_genes,B_genes,M_genes))
+  #sc = calculateContaminationFraction(sc, list(IG = Hep_genes,T_genes,B_genes,M_genes), useToEst = useToEst,forceAccept=TRUE)
   out = adjustCounts(sc)
   srat <-CreateSeuratObject(out)
   saveRDS(srat, paste0("./01_tidy_data/0_iAL",i,"_SoupX.rds"))
@@ -117,7 +110,6 @@ rm()
 
 ########################## Kategorien Stimlulation und Sex hinzufügen, evtl noch age? ####################
 animals <-c("_")#"87","88","91","92")
-
 NPC_87 <-readRDS(paste0("./01_tidy_data/0_iAL87_SoupX.rds")) 
 NPC_88 <- readRDS(paste0("./01_tidy_data/0_iAL88_SoupX.rds")) 
 NPC_91 <- readRDS(paste0("./01_tidy_data/0_iAL91_SoupX.rds")) 
@@ -136,10 +128,8 @@ NPC_91$sample <- "iAL91"
 NPC_92$sample <- "iAL92"
 
 ############################### After Applying ambient RNA Decontamination Set Up Standard QC ##################################
-#Setting things up for quality control mitochondrial genes, ribosomal content, doublets----
 NPC_87[["percent.mt"]] <- PercentageFeatureSet(NPC_87, pattern = "^mt-") 
 NPC_87[["percent.rb"]] <- PercentageFeatureSet(NPC_87, pattern = "Rp[sl]")
-
 NPC_88[["percent.mt"]] <- PercentageFeatureSet(NPC_88, pattern = "^mt-") 
 NPC_88[["percent.rb"]] <- PercentageFeatureSet(NPC_88, pattern = "Rp[sl]")
 NPC_91[["percent.mt"]] <- PercentageFeatureSet(NPC_91, pattern = "^mt-") 
@@ -358,7 +348,6 @@ png(paste0("./03_plots/1_QC/QC_1_noQC_Mito_per_sample_density.png"))
 x <- metadata %>%
   ggplot(aes(color=sample, x=percent.mt, fill=sample)) +
   geom_density(alpha = 0.2) +
-  scale_x_log10() +
   theme_classic() +
   geom_vline(xintercept = 10)
 print(x)
@@ -380,8 +369,8 @@ dev.off()
 # Visualize number of Complexity of cells/sample as nGene vs nUMI----
 png(paste0("./03_plots/1_QC/QC_1_noQC_Gene_vs_UMI_persample.png"))
 x <- metadata%>%
-  ggplot(aes(x=nUMI, y=nGene, color=percent.mt)) +
-  geom_point() +
+  ggplot(aes(x=nUMI, y=nGene)) +
+  geom_point(aes(colour=percent.mt)) +
   scale_colour_gradient(low = "gray90", high = "black") +
   stat_smooth(method=lm) +
   scale_x_log10() +
@@ -550,7 +539,6 @@ png(paste0("./03_plots/1_QC/QC_1_QC6_Mito_per_sample_density.png"))
 x <- metadata_QC6 %>%
   ggplot(aes(color=sample, x=percent.mt, fill=sample)) +
   geom_density(alpha = 0.2) +
-  scale_x_log10() +
   theme_classic() +
   geom_vline(xintercept = 10)
 print(x)
@@ -572,8 +560,8 @@ dev.off()
 # Visualize number of Complexity of cells/sample as nGene vs nUMI----
 png(paste0("./03_plots/1_QC/QC_1_QC6_Gene_vs_UMI_persample.png"))
 x <- metadata_QC6%>%
-  ggplot(aes(x=nUMI, y=nGene, color=percent.mt)) +
-  geom_point() +
+  ggplot(aes(x=nUMI, y=nGene)) +
+  geom_point(aes(color=percent.mt)) +
   scale_colour_gradient(low = "gray90", high = "black") +
   stat_smooth(method=lm) +
   scale_x_log10() +
@@ -619,4 +607,4 @@ NPC_92 <-subset(NPC_92, subset = QC6 == 'Pass')%>%NormalizeData(verbose=F)%>%
 saveRDS(NPC_92, "./01_tidy_data/1_QC_1_QC6_NPC_92.rds")
 
 #Remove unused data from memory to save ram
-rm( NPC_87,NPC_88,NPC_91,NPC_92metadata_QC6, metadata)
+rm( NPC_87,NPC_88,NPC_91,NPC_92, metadata_QC6, metadata)

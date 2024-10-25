@@ -111,7 +111,7 @@ DEG_Genes<-sapply(X=clusters,
 my_genes <- rownames(NPC_ALL_TRANSFORMED@assays$RNA$counts)
 gmt_files <- list.files(path = GS_path, pattern = '.gmt', full.names = TRUE)
 gmt_files
-#c="Hepatocytes"
+
   #### Prepare Ranked Gene list
   for (c in clusters){
     for(gmt in gmt_files){

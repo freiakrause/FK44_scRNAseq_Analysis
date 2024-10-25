@@ -17,6 +17,7 @@
 #renv::install("Seurat")
 #renv::install("SoupX")
 #renv::install("ggpubr")
+#renv::install("tidyverse")
 #renv::install("hrbrthemes")
 #if (!require("BiocManager", quietly = TRUE))
 #  renv::install("BiocManager")
@@ -33,11 +34,13 @@
 #remotes::install_github("Nawijn-Group-Bioinformatics/FastCAR")
 
 #### Correlate Soup Genes per Sample with Clusters per smaples and check wich cluster contriubtes to soup most #####
+rm(list = ls(all.names = TRUE)) # will clear all objects including hidden objects
+gc() # free up memory and report the memory usage
+
 library(dplyr)
 library(Seurat)
 library(patchwork)
 library(ggplot2)
-library(ComplexHeatmap)
 library(readr)
 library(stringr)
 library(ggpubr)
@@ -52,7 +55,7 @@ set.seed(42)
 
 animals <-c("87","88","91","92")
 # Import SCtransformed, integrated, clustered, annotated,  dataset from FK44_1_COUNT_2_TRANSFORM and CLUSTERING_Script.R
-NPC_CLUSTER <- readRDS("./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter_PrepSCT.rds")
+NPC_CLUSTER <- readRDS("./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter.rds")
 # Do Tutorial from https://divingintogeneticsandgenomics.com/post/how-to-do-gene-correlation-for-single-cell-rnaseq-data-part-1/
 #Functions they define in the tutorial
 matrix_to_expression_df<- function(x, obj){
