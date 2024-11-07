@@ -40,16 +40,19 @@ rm(list = ls(all.names = TRUE)) # will clear all objects including hidden object
 gc() # free up memory and report the memory usage
 
 library(Seurat)
+library(tidyverse)
 library(ggplot2)
 source("02_r_scripts/Function_Malat1.R")
 library(SingleR)
 library(dplyr)
+library(stringr)
 library(celldex)
 library(RColorBrewer)
 library(SingleCellExperiment)
 library(gt)
 library(paletteer)
 library(ggsci)
+library(SoupX)
 set.seed(42)
 
 ############################################# Load Input Data ###############################################
@@ -161,7 +164,7 @@ NPC_91<-readRDS("./01_tidy_data/2_1_2_NPC_91_afterCellCycleScoring.rds")
 NPC_92<-readRDS("./01_tidy_data/2_1_2_NPC_92_afterCellCycleScoring.rds")
 
 ####Due to change in Seurat integration I had to adjust code here (integrate anchors changed to Integrate Layers ~16.10.24. 
-NPC <-merge(NPC_87,y=c(NPC_88,NPC_91,NPC_92), add.cell.ids=c("1","2","3","4"))
+NPC <-merge(NPC_87,y=c(NPC_88,NPC_91,NPC_92), add.cell.ids=c("87","88","91","92"))
 NPC <-SCTransform(NPC,  vst.flavor= "v2",method = "glmGamPoi",verbose = F, 
                   vars.to.regress = c("percent.mt","S.Score","G2M.Score"))
 NPC <-RunPCA(NPC, npcs=30, verbose = F)
@@ -205,7 +208,7 @@ p<-VlnPlot(NPC_ALL_TRANSFORMED,
   theme(plot.title = element_text(size=9.5,hjust=0.5),
         axis.title=element_text(size=9))
 print(p)
-ggsave(filename = paste0("./03_plots/Test_SoupWith Clustermarkers_not_better.png"),
+ggsave(filename = paste0("./03_plots/240711_Test_Clustering before_woSoup.png"),
        p,width =(1+(length(unique(APP))*1.5)),
        height = 5, dpi = 600,bg="transparent")
 ####
@@ -274,7 +277,93 @@ NPC_ALL_TRANSFORMED$sex.stim <- paste(NPC_ALL_TRANSFORMED$sex, NPC_ALL_TRANSFORM
 
 
 saveRDS(NPC_ALL_TRANSFORMED, file = "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter.rds")
+######
+###########################Load Data and Decontaminate with SoupX ##################
+#### Soup Decont ----
+ConservedMarkers_Top20_woMALAT_Filter <- read_csv("99_other/2_Clustering_bad soup_25.10.24/ConservedMarkers_Top20_woMALAT_Filter.csv")
+Hep_genes <-subset(ConservedMarkers_Top20_woMALAT_Filter,subset=ConservedMarkers_Top20_woMALAT_Filter$cluster== "Hepatocytes")[3]%>%pull(genes)
+T_genes <-subset(ConservedMarkers_Top20_woMALAT_Filter,subset=ConservedMarkers_Top20_woMALAT_Filter$cluster== "T cells")[3]%>%pull(genes)
+B_genes <-subset(ConservedMarkers_Top20_woMALAT_Filter,subset=ConservedMarkers_Top20_woMALAT_Filter$cluster== "B cells")[3]%>%pull(genes)
+M_genes <-subset(ConservedMarkers_Top20_woMALAT_Filter,subset=ConservedMarkers_Top20_woMALAT_Filter$cluster== "Macrophages")[3]%>%pull(genes)
+Mono_genes <-subset(ConservedMarkers_Top20_woMALAT_Filter,subset=ConservedMarkers_Top20_woMALAT_Filter$cluster== "Monocytes")[3]%>%pull(genes)
+N_genes <-subset(ConservedMarkers_Top20_woMALAT_Filter,subset=ConservedMarkers_Top20_woMALAT_Filter$cluster== "Granulocytes")[3]%>%pull(genes)
+E_genes <-subset(ConservedMarkers_Top20_woMALAT_Filter,subset=ConservedMarkers_Top20_woMALAT_Filter$cluster== "Endothelial cells")[3]%>%pull(genes)
+F_genes <-subset(ConservedMarkers_Top20_woMALAT_Filter,subset=ConservedMarkers_Top20_woMALAT_Filter$cluster== "Fibroblasts")[3]%>%pull(genes)
+NK_genes <-subset(ConservedMarkers_Top20_woMALAT_Filter,subset=ConservedMarkers_Top20_woMALAT_Filter$cluster== "NK cells")[3]%>%pull(genes)
 
+
+Gene_List <-list(Hep_genes,T_genes,B_genes,M_genes, Mono_genes,N_genes,E_genes,F_genes,NK_genes)
+animals <-c("87","88","91","92")
+
+
+for (i in animals){ 
+  i="87"
+  NPC_metadata <-NPC_ALL_TRANSFORMED@meta.data
+  NPC_metadata<-filter(NPC_metadata,startsWith(rownames(NPC_metadata),"87"))
+  NPC_metadata<-mutate(NPC_metadata,ID = str_extract(string = rownames(NPC_metadata),pattern = "[AGTC]+-1$"))%>%
+    remove_rownames %>%
+    column_to_rownames(var="ID")
+  Clusters<-as.character(pull(NPC_metadata,seurat_clusters))
+  names(Clusters)<-rownames(NPC_metadata)
+  sc = load10X(paste0("./00_raw_data/biomedical-sequencing.at/projects/BSA_0873_FK44_1_LiverMet_A_1_1_51ddbfd228ec40b096e110101b219cb0/COUNT/Liver_NPC_iAL",i,"_transcriptome"))
+  sc = setClusters(sc, Clusters)
+  Soup <-sc$soupProfile[order(sc$soupProfile$est, decreasing = TRUE), ]
+  write.csv(Soup,paste0("./99_other/0_Decont_SoupX/0_Decont_SoupX_Soup_Genes_iAL",i,".csv"))
+  Soup_Genes <-head(rownames(Soup), n=10)
+  #sc = autoEstCont(sc)
+  useToEst = estimateNonExpressingCells(sc, nonExpressedGeneList = list(IG= Hep_genes,T_genes,B_genes,M_genes, Mono_genes,N_genes,E_genes,F_genes,NK_genes))
+  sc = calculateContaminationFraction(sc, list(IG= Hep_genes,T_genes,B_genes,M_genes, Mono_genes,N_genes,E_genes,F_genes,NK_genes), useToEst = useToEst,forceAccept=TRUE)
+  out = adjustCounts(sc)
+  srat <-CreateSeuratObject(out)
+  saveRDS(srat, paste0("./01_tidy_data/0_iAL",i,"_SoupX.rds"))
+  rm(srat)
+  
+  ##Vizuals----
+  dd = sc$metaData[colnames(sc$toc), ]
+  mids = aggregate(cbind(tSNE1, tSNE2) ~ clustersFine, data = dd, FUN = mean)
+  gg = ggplot(dd, aes(tSNE1, tSNE2))+
+    geom_point(aes(colour = clustersFine), size = 0.2) +
+    geom_label(data = mids, aes(label = clustersFine)) + ggtitle(paste0(i))+
+    guides(colour = guide_legend(override.aes = list(size = 1)))
+  png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_ClustersFine.png"))
+  print(plot(gg))
+  dev.off()
+  
+  for (GL in Gene_List){     
+    for (g in GL){
+      dd$val = sc$toc[g, ]
+      gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
+      png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_Clusters_",g,".png"))
+      print(plot(gg))
+      dev.off()
+      gg = plotMarkerMap(sc, g)
+      png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_Clusters_",g,"_SIG.png"))
+      print(plot(gg))
+      dev.off()
+      gg <-plotChangeMap(sc, out, g)
+      png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_Clusters_",g,"_CHANGE.png"))
+      print(gg)
+      dev.off()
+    }
+  }
+  for (g in Soup_Genes){
+    dd$val = sc$toc[g, ]
+    gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
+    png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_Clusters_",g,".png"))
+    print(plot(gg))
+    dev.off()
+    gg = plotMarkerMap(sc, g)
+    png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_Clusters_",g,"_SIG.png"))
+    print(plot(gg))
+    dev.off()
+    gg <-plotChangeMap(sc, out, g)
+    png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_Clusters_",g,"_CHANGE.png"))
+    print(gg)
+    dev.off()
+  }
+}
+rm(list = ls(all.names = TRUE)) # will clear all objects including hidden objects
+####
 #NPC_ALL_TRANSFORMED <- readRDS( "./01_tidy_data/3_NPC_ALL_TRANSFORMED_Annotated_Reduced_woMALAT_Filter.rds.rds")
 #### Vizuals Malat1 Filter ###
 
