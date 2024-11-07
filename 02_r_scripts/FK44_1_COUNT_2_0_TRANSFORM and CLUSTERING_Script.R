@@ -62,7 +62,7 @@ set.seed(42)
 #To get cell cycle to need to convert cell cycle gene list which is for human into mouse
 mmus_s = gorth(cc.genes.updated.2019$s.genes, source_organism = "hsapiens", target_organism = "mmusculus")$ortholog_name
 mmus_g2m = gorth(cc.genes.updated.2019$g2m.genes, source_organism = "hsapiens", target_organism = "mmusculus")$ortholog_name
-NPC_list<-list()
+
 animals<-c("87","88","91","92")
 #I do this here per animal/sample bc before I integrated samples after QC and then die SCT and clustering.
 #but i saw visual differences per cluster per animal and in SCTransform i can not regress out sex,stim or sample.When I look at integraedd data w/o SCTransform after integration,
@@ -161,9 +161,9 @@ NPC_91<-readRDS("./01_tidy_data/2_1_2_NPC_91_afterCellCycleScoring.rds")
 NPC_92<-readRDS("./01_tidy_data/2_1_2_NPC_92_afterCellCycleScoring.rds")
 
 ####Due to change in Seurat integration I had to adjust code here (integrate anchors changed to Integrate Layers ~16.10.24. 
-#Should be easier to use in the future but for me right now chaos)
 NPC <-merge(NPC_87,y=c(NPC_88,NPC_91,NPC_92), add.cell.ids=c("1","2","3","4"))
-NPC <-SCTransform(NPC,  vst.flavor= "v2",method = "glmGamPoi",  verbose = F, vars.to.regress = c("percent.mt","S.Score","G2M.Score"))
+NPC <-SCTransform(NPC,  vst.flavor= "v2",method = "glmGamPoi",verbose = F, 
+                  vars.to.regress = c("percent.mt","S.Score","G2M.Score"))
 NPC <-RunPCA(NPC, npcs=30, verbose = F)
 options(future.globals.maxSize = 3e+10)
 NPC_ALL_TRANSFORMED <-IntegrateLayers(object= NPC, method = HarmonyIntegration, 
@@ -182,7 +182,33 @@ NPC_ALL_TRANSFORMED <- FindVariableFeatures(NPC_ALL_TRANSFORMED, selection.metho
 all.genes <- rownames(NPC_ALL_TRANSFORMED)
 NPC_ALL_TRANSFORMED <- ScaleData(NPC_ALL_TRANSFORMED, features = all.genes)
 NPC_ALL_TRANSFORMED <-JoinLayers(NPC_ALL_TRANSFORMED)
-
+###Test expression of example genes to see if souo removal etc is beter
+APP <-c("Alb","Saa1","Hp","Fgg")
+Recruitment <-c("Vegfa","Cxcl1","Csf1","Vcam1","Cxcl2","Ccr2") #"Cxcl12",
+ECM <-c("Serpina1e","Tgfb1","Col1a1","Mmp2","Fn1","Timp1","Mmp9")#,"Des","Acta2"
+Fatty <-c("Fabp1","Apoa1","Apoa2")
+DefaultAssay(NPC_ALL_TRANSFORMED) <-"RNA"
+p<-VlnPlot(NPC_ALL_TRANSFORMED, 
+           features = APP, 
+           assay= "RNA", 
+           layer= "scale.data",
+           log = T, 
+           stack = T,
+           flip = F, 
+           fill.by = "ident",
+           split.by="stim",
+           combine=T)+
+  coord_cartesian( ylim=c(1,16),clip = "off")+
+  labs(title= "Acute Phase Response Genes",
+       x= "Expression Level", y="Cell Type")+scale_fill_manual(values=c("#90bff9","#99cc99"))+
+  theme_classic()+
+  theme(plot.title = element_text(size=9.5,hjust=0.5),
+        axis.title=element_text(size=9))
+print(p)
+ggsave(filename = paste0("./03_plots/Test_SoupWith Clustermarkers_not_better.png"),
+       p,width =(1+(length(unique(APP))*1.5)),
+       height = 5, dpi = 600,bg="transparent")
+####
 saveRDS(NPC_ALL_TRANSFORMED, "./01_tidy_data/3_NPC_ALL_TRANSFORMED.rds")
 rm(NPC, NPC_87, NPC_88, NPC_91, NPC_92)
 #rm(NPC_ALL_TRANSFORMED)

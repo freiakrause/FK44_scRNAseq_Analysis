@@ -41,11 +41,19 @@ set.seed(42)
 
 ###########################Load Data and Decontaminate with SoupX ##################
 #### Soup Decont ----
-# Hep_genes <-c("Saa1", "Saa2","Alb","Tat")
-# T_genes <-c("Cd3e","Cd3d", "Cd4", "Cd8a") 
-# B_genes <-c("Cd19")
-# M_genes <-c("Clec4f")
-# Gene_List <-list(Hep_genes,T_genes,B_genes,M_genes)
+ConservedMarkers_Top20_woMALAT_Filter <- read_csv("99_other/2_Clustering_bad soup_25.10.24/ConservedMarkers_Top20_woMALAT_Filter.csv")
+Hep_genes <-subset(ConservedMarkers_Top20_woMALAT_Filter,subset=ConservedMarkers_Top20_woMALAT_Filter$cluster== "Hepatocytes")[3]%>%pull(genes)
+T_genes <-subset(ConservedMarkers_Top20_woMALAT_Filter,subset=ConservedMarkers_Top20_woMALAT_Filter$cluster== "T cells")[3]%>%pull(genes)
+B_genes <-subset(ConservedMarkers_Top20_woMALAT_Filter,subset=ConservedMarkers_Top20_woMALAT_Filter$cluster== "B cells")[3]%>%pull(genes)
+M_genes <-subset(ConservedMarkers_Top20_woMALAT_Filter,subset=ConservedMarkers_Top20_woMALAT_Filter$cluster== "Macrophages")[3]%>%pull(genes)
+Mono_genes <-subset(ConservedMarkers_Top20_woMALAT_Filter,subset=ConservedMarkers_Top20_woMALAT_Filter$cluster== "Monocytes")[3]%>%pull(genes)
+N_genes <-subset(ConservedMarkers_Top20_woMALAT_Filter,subset=ConservedMarkers_Top20_woMALAT_Filter$cluster== "Granulocytes")[3]%>%pull(genes)
+E_genes <-subset(ConservedMarkers_Top20_woMALAT_Filter,subset=ConservedMarkers_Top20_woMALAT_Filter$cluster== "Endothelial cells")[3]%>%pull(genes)
+F_genes <-subset(ConservedMarkers_Top20_woMALAT_Filter,subset=ConservedMarkers_Top20_woMALAT_Filter$cluster== "Fibroblasts")[3]%>%pull(genes)
+NK_genes <-subset(ConservedMarkers_Top20_woMALAT_Filter,subset=ConservedMarkers_Top20_woMALAT_Filter$cluster== "NK cells")[3]%>%pull(genes)
+
+
+Gene_List <-list(Hep_genes,T_genes,B_genes,M_genes, Mono_genes,N_genes,E_genes,F_genes,NK_genes)
 animals <-c("87","88","91","92")
 for (i in animals){  
   sc = load10X(paste0("./00_raw_data/biomedical-sequencing.at/projects/BSA_0873_FK44_1_LiverMet_A_1_1_51ddbfd228ec40b096e110101b219cb0/COUNT/Liver_NPC_iAL",i,"_transcriptome"))
@@ -53,9 +61,9 @@ for (i in animals){
   Soup <-sc$soupProfile[order(sc$soupProfile$est, decreasing = TRUE), ]
   write.csv(Soup,paste0("./99_other/0_Decont_SoupX/0_Decont_SoupX_Soup_Genes_iAL",i,".csv"))
   Soup_Genes <-head(rownames(Soup), n=10)
-  sc = autoEstCont(sc)
-  #useToEst = estimateNonExpressingCells(sc, nonExpressedGeneList = list(IG = Hep_genes, T_genes,B_genes,M_genes))
-  #sc = calculateContaminationFraction(sc, list(IG = Hep_genes,T_genes,B_genes,M_genes), useToEst = useToEst,forceAccept=TRUE)
+  #sc = autoEstCont(sc)
+  useToEst = estimateNonExpressingCells(sc, nonExpressedGeneList = list(IG= Hep_genes,T_genes,B_genes,M_genes, Mono_genes,N_genes,E_genes,F_genes,NK_genes))
+  sc = calculateContaminationFraction(sc, list(IG= Hep_genes,T_genes,B_genes,M_genes, Mono_genes,N_genes,E_genes,F_genes,NK_genes), useToEst = useToEst,forceAccept=TRUE)
   out = adjustCounts(sc)
   srat <-CreateSeuratObject(out)
   saveRDS(srat, paste0("./01_tidy_data/0_iAL",i,"_SoupX.rds"))
@@ -105,11 +113,11 @@ for (i in animals){
     dev.off()
   }
 }
-rm()
+rm(list = ls(all.names = TRUE)) # will clear all objects including hidden objects
 
 
 ########################## Kategorien Stimlulation und Sex hinzufügen, evtl noch age? ####################
-animals <-c("_")#"87","88","91","92")
+
 NPC_87 <-readRDS(paste0("./01_tidy_data/0_iAL87_SoupX.rds")) 
 NPC_88 <- readRDS(paste0("./01_tidy_data/0_iAL88_SoupX.rds")) 
 NPC_91 <- readRDS(paste0("./01_tidy_data/0_iAL91_SoupX.rds")) 
