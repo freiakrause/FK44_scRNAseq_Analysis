@@ -29,26 +29,102 @@
 
 rm(list = ls(all.names = TRUE)) # will clear all objects including hidden objects
 gc() # free up memory and report the memory usage
+library(readr)
 library(Seurat)
 library(dplyr)
 library(ggplot2)
 library(RColorBrewer)
+library(SoupX)
 library(Seurat)
 library(gprofiler2)
 source("02_r_scripts/Function_Malat1.R")
 set.seed(42)
 
+###########################Load Data and Decontaminate with SoupX ##################
+#### Soup Decont ----
+ConservedMarkers_Top5_woMALAT_Filter <- read_csv("99_other/2_Clustering_bad soup_25.10.24/ConservedMarkers_Top5_woMALAT_Filter.csv")
+Hep_genes <-subset(ConservedMarkers_Top5_woMALAT_Filter,subset=ConservedMarkers_Top5_woMALAT_Filter$cluster== "Hepatocytes")[3]%>%pull(genes)%>%append(c("Saa1","Saa2"))
+T_genes <-subset(ConservedMarkers_Top5_woMALAT_Filter,subset=ConservedMarkers_Top5_woMALAT_Filter$cluster== "T cells")[3]%>%pull(genes)
+B_genes <-subset(ConservedMarkers_Top5_woMALAT_Filter,subset=ConservedMarkers_Top5_woMALAT_Filter$cluster== "B cells")[3]%>%pull(genes)
+M_genes <-subset(ConservedMarkers_Top5_woMALAT_Filter,subset=ConservedMarkers_Top5_woMALAT_Filter$cluster== "Macrophages")[3]%>%pull(genes)
+Mono_genes <-subset(ConservedMarkers_Top5_woMALAT_Filter,subset=ConservedMarkers_Top5_woMALAT_Filter$cluster== "Monocytes")[3]%>%pull(genes)
+N_genes <-subset(ConservedMarkers_Top5_woMALAT_Filter,subset=ConservedMarkers_Top5_woMALAT_Filter$cluster== "Granulocytes")[3]%>%pull(genes)
+E_genes <-subset(ConservedMarkers_Top5_woMALAT_Filter,subset=ConservedMarkers_Top5_woMALAT_Filter$cluster== "Endothelial cells")[3]%>%pull(genes)
+F_genes <-subset(ConservedMarkers_Top5_woMALAT_Filter,subset=ConservedMarkers_Top5_woMALAT_Filter$cluster== "Fibroblasts")[3]%>%pull(genes)
+NK_genes <-subset(ConservedMarkers_Top5_woMALAT_Filter,subset=ConservedMarkers_Top5_woMALAT_Filter$cluster== "NK cells")[3]%>%pull(genes)
+
+
+Gene_List <-list(Hep_genes,T_genes,B_genes,M_genes, Mono_genes,N_genes,E_genes,F_genes,NK_genes)
+animals <-c("87","88","91","92")
+
+for (i in animals){  
+  print(i)
+  sc = load10X(paste0("./00_raw_data/biomedical-sequencing.at/projects/BSA_0873_FK44_1_LiverMet_A_1_1_51ddbfd228ec40b096e110101b219cb0/COUNT/Liver_NPC_iAL",i,"_transcriptome"))
+  sc = setClusters(sc, sc$metaData$clustersFine)
+  Soup <-sc$soupProfile[order(sc$soupProfile$est, decreasing = TRUE), ]
+  write.csv(Soup,paste0("./99_other/0_Decont_SoupX/0_Decont_SoupX_Soup_Genes_iAL",i,".csv"))
+  Soup_Genes <-head(rownames(Soup), n=10)
+  #sc = autoEstCont(sc)
+  useToEst = estimateNonExpressingCells(sc, nonExpressedGeneList = list(HG= Hep_genes,TG=T_genes,BG=B_genes,MG=M_genes, MoG=Mono_genes,NG=N_genes,EG=E_genes,FG=F_genes,NKG=NK_genes))
+  sc = calculateContaminationFraction(sc,list(HG= Hep_genes,TG=T_genes,BG=B_genes,MG=M_genes, MoG=Mono_genes,NG=N_genes,EG=E_genes,FG=F_genes,NKG=NK_genes), useToEst = useToEst,forceAccept=TRUE)
+  out = adjustCounts(sc)
+  srat <-CreateSeuratObject(out)
+  saveRDS(srat, paste0("./01_tidy_data/0_iAL",i,"_SoupX.rds"))
+  rm(srat)
+  
+  ##Vizuals----
+  dd = sc$metaData[colnames(sc$toc), ]
+  mids = aggregate(cbind(tSNE1, tSNE2) ~ clustersFine, data = dd, FUN = mean)
+  gg = ggplot(dd, aes(tSNE1, tSNE2))+
+    geom_point(aes(colour = clustersFine), size = 0.2) +
+    geom_label(data = mids, aes(label = clustersFine)) + ggtitle(paste0(i))+
+    guides(colour = guide_legend(override.aes = list(size = 1)))
+  png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_ClustersFine.png"))
+  print(plot(gg))
+  dev.off()
+  
+  for (GL in Gene_List){     
+    for (g in GL){
+      dd$val = sc$toc[g, ]
+      #gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
+      #png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_Clusters_",g,".png"))
+      #print(plot(gg))
+      #dev.off()
+      #gg = plotMarkerMap(sc, g)
+      #png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_Clusters_",g,"_SIG.png"))
+      #print(plot(gg))
+      #dev.off()
+      gg <-plotChangeMap(sc, out, g)
+      png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_Clusters_",g,"_CHANGE.png"))
+      print(gg)
+      dev.off()
+    }
+  }
+  for (g in Soup_Genes){
+    dd$val = sc$toc[g, ]
+    #gg = ggplot(dd, aes(tSNE1, tSNE2)) + geom_point(aes(colour = val > 0))
+    #png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_Clusters_",g,".png"))
+    #print(plot(gg))
+    #dev.off()
+    #gg = plotMarkerMap(sc, g)
+    #png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_Clusters_",g,"_SIG.png"))
+    #print(plot(gg))
+    #dev.off()
+    gg <-plotChangeMap(sc, out, g)
+    png(paste0("./03_plots/0_Ambient_RNA_removal_SoupX/QC_0_SoupX_",i,"_Clusters_",g,"_CHANGE.png"))
+    print(gg)
+    dev.off()
+  }
+}
+rm(list = ls(all.names = TRUE)) # will clear all objects including hidden objects
+
 
 ########################## Kategorien Stimlulation und Sex hinzufügen, evtl noch age? ####################
 
-NPC_87 <-Read10X(data.dir = "./00_raw_data/biomedical-sequencing.at/projects/BSA_0873_FK44_1_LiverMet_A_1_1_51ddbfd228ec40b096e110101b219cb0/COUNT/Liver_NPC_iAL87_transcriptome/filtered_feature_bc_matrix/")%>%
-CreateSeuratObject(project="FK44.1",min.cells=10, min.features=200) 
-NPC_88 <-Read10X(data.dir = "./00_raw_data/biomedical-sequencing.at/projects/BSA_0873_FK44_1_LiverMet_A_1_1_51ddbfd228ec40b096e110101b219cb0/COUNT/Liver_NPC_iAL88_transcriptome/filtered_feature_bc_matrix/")%>%
-  CreateSeuratObject(project="FK44.1",min.cells=10, min.features=200) 
-NPC_91 <-Read10X(data.dir = "./00_raw_data/biomedical-sequencing.at/projects/BSA_0873_FK44_1_LiverMet_A_1_1_51ddbfd228ec40b096e110101b219cb0/COUNT/Liver_NPC_iAL91_transcriptome/filtered_feature_bc_matrix/")%>%
-  CreateSeuratObject(project="FK44.1",min.cells=10, min.features=200) 
-NPC_92 <-Read10X(data.dir = "./00_raw_data/biomedical-sequencing.at/projects/BSA_0873_FK44_1_LiverMet_A_1_1_51ddbfd228ec40b096e110101b219cb0/COUNT/Liver_NPC_iAL92_transcriptome/filtered_feature_bc_matrix/")%>%
-  CreateSeuratObject(project="FK44.1",min.cells=10, min.features=200) 
+NPC_87 <-readRDS(paste0("./01_tidy_data/0_iAL87_SoupX.rds")) 
+NPC_88 <- readRDS(paste0("./01_tidy_data/0_iAL88_SoupX.rds")) 
+NPC_91 <- readRDS(paste0("./01_tidy_data/0_iAL91_SoupX.rds")) 
+NPC_92 <- readRDS(paste0("./01_tidy_data/0_iAL92_SoupX.rds")) 
 NPC_87$stim <- "TAM"
 NPC_88$stim <- "EtOH"
 NPC_91$stim <- "TAM"
